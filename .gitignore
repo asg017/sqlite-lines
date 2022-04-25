@@ -1,0 +1,5 @@
+sqlite/
+dist/
+spaces/
+*.dylib
+*.txt
