@@ -3,3 +3,4 @@ dist/
 spaces/
 *.dylib
 *.txt
+*.db
