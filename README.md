@@ -1,3 +1,10 @@
+# sqlite-lines
+
+```
+cat /Volumes/Sandisk1/draw/face.ndjson | time ndjson-reduce 'p += d.drawing.length' 0
+cat /Volumes/Sandisk1/draw/face.ndjson | time ./a.out 'sum(json_array_length(contents, "$.drawing"))'
+```
+
 ```
 seq 1 1000000 > test_files/big.txt
 

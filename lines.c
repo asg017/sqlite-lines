@@ -366,6 +366,5 @@ int sqlite3_lines_init(
   if(rc == SQLITE_OK) rc = sqlite3_create_function(db, "lines_debug", 0, SQLITE_UTF8|SQLITE_INNOCUOUS|SQLITE_DETERMINISTIC, 0, linesDebugFunc, 0, 0); 
 
   if(rc == SQLITE_OK) rc = sqlite3_create_module(db, "lines_read", &linesReadModule, 0);
-  //if(rc == SQLITE_OK) rc = sqlite3_create_module(db, "lines_readgz", &linesReadGzModule, 0);
   return rc;
 }

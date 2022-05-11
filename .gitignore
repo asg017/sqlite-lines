@@ -4,3 +4,4 @@ spaces/
 *.dylib
 *.txt
 *.db
+sqlite3-extra.c
