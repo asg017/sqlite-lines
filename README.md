@@ -1,13 +1,30 @@
+```
+seq 1 1000000 > test_files/big.txt
+
+dd if=/dev/zero of=test_files/big-line-line.txt bs=1000000 count=1001
+```
+
 ## TODO
 
+- [ ] separate `lines()` and `lines_read()` functions
+- [ ] `sqlite3_limit` check on large lines
+- [ ] check that delim is 1 char long
+- [ ] handle `SQLITE_INDEX_CONSTRAINT_GT` etc. on rowid
+- [ ] document/fix CRLF handling
+- [ ] compile option for no filesystem access
+- [ ] maybe `lines_stdin` table?
+- [ ] more benchmarks
+- [ ] parse log examples
+- [ ] linux/windows support
+- [ ] mac m1 support?
+
+### Maybe future
+
+- [ ] CLI? `cat a.log | lines out.db 'select * from stdin where contents -> "type" == "Polygon"'`
 - [ ] Proper glob support
 - [ ] gzipped files
 - [ ] S3 access?
 - [ ] network access?
-- [ ] special delim
-- [ ] rename to `cat`, `head`, `tail` ?
-- [ ] CLI?
-  - `cat a.log | lines out.db 'select * from stdin where contents -> "type" == "Polygon"'`
 
 ## Examples
 

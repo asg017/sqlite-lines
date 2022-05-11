@@ -5,6 +5,7 @@ DATE=$(shell date +'%FT%TZ%z')
 dist/lines.dylib: lines.c
 	gcc -Isqlite \
 	-fPIC -shared \
+	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
 	$< -o $@
 
 mac: dist/lines.dylib
