@@ -19,15 +19,14 @@ dist/cli: cli.c dist/lines.o
 	sqlite/.libs/sqlite3.o dist/lines.o \
 	$< -o $@
 
-sqlite3-extra.c: sqlite/sqlite3.c lines.c core_init.c
+sqlite3-extra.c: sqlite/sqlite3.c core_init.c
 	cp sqlite/sqlite3.c $@
-	cat lines.c >> $@
 	cat core_init.c >> $@
 
-dist/sqlite3: sqlite3-extra.c
-	gcc -DSQLITE_LINES_DATE=\"x\"  \
+dist/sqlite3: sqlite3-extra.c dist/lines.o
+	gcc \
 	-DSQLITE_EXTRA_INIT=core_init \
-	sqlite3-extra.c sqlite/shell.c -o $@
+	sqlite3-extra.c sqlite/shell.c dist/lines.o -o $@
 
 mac: dist/lines.dylib
 
