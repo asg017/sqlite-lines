@@ -24,10 +24,13 @@ dd if=/dev/zero of=test_files/big-line-line.txt bs=1000000 count=1001
 - [ ] parse log examples
 - [ ] linux/windows support
 - [ ] mac m1 support?
+- [ ] what CLI do
+- [ ] js/WASM output?
+- [ ] test `dist/sqlite3`
+- [ ] test `dist/cli`
 
 ### Maybe future
 
-- [ ] CLI? `cat a.log | lines out.db 'select * from stdin where contents -> "type" == "Polygon"'`
 - [ ] Proper glob support
 - [ ] gzipped files
 - [ ] S3 access?
