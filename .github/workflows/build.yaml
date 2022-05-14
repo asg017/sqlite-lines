@@ -19,6 +19,10 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
+          wget https://www.sqlite.org/2022/sqlite-amalgamation-3380500.zip
+          unzip sqlite-amalgamation-3380500.zip
+          mv sqlite-amalgamation-3380500 sqlite
+          rm sqlite-amalgamation-3380500.zip
           make dist/package.zip
           make test
       - name: distribution
