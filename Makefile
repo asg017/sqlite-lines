@@ -34,8 +34,8 @@ dist/lines0.dylib: lines.c
 	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
 	$< -o $@
 
-dist/package.zip: dist/lines.dylib dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
-	zip --junk-paths $@ dist/lines.dylib  dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
+dist/package.zip: dist/lines0.dylib dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
+	zip --junk-paths $@ dist/lines0.dylib  dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
 
 
 test-watch:
@@ -52,7 +52,7 @@ test-cli: dist/sqlite-lines
 test-sqlite3: dist/sqlite3
 	python3 tests/test-sqlite3.py
 
-test-loadable: dist/lines.dylib
+test-loadable: dist/lines0.dylib
 	python3 tests/test-loadable.py
 
 test-watch-cli: dist/sqlite-lines tests/test-cli.py
@@ -61,8 +61,8 @@ test-watch-cli: dist/sqlite-lines tests/test-cli.py
 test-watch-sqlite3: dist/sqlite3
 	watchexec -w dist/sqlite3 -w tests/test-sqlite3.py -- make test-sqlite3
 
-test-watch-loadable: dist/lines.dylib
-	watchexec -w dist/lines.dylib -w tests/test-loadable.py -- make test-loadable
+test-watch-loadable: dist/lines0.dylib
+	watchexec -w dist/lines0.dylib -w tests/test-loadable.py -- make test-loadable
 
 .PHONY: all clean \
 	test test-watch test-cli test-loadable test-sqlite3 
