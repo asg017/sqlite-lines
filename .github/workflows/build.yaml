@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: |
-          make package.zip
+          make dist/package.zip
           make test
       - name: distribution
         uses: actions/upload-artifact@v2
