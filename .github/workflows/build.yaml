@@ -1,0 +1,28 @@
+on: [push]
+name: "build"
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          #- os: ubuntu-latest
+          #  asset: sqlite-html0-linux-amd64
+          # 2022 uses python 3.9, which we need to have json funcs in sqlite for test.py.
+          #- os: windows-2022
+          #  asset: sqlite-html0-windows
+          - os: macos-latest
+            asset: sqlite-lines
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: |
+          make package.zip
+          make test
+      - name: distribution
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{matrix.asset}}
+          path: dist

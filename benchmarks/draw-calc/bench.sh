@@ -6,6 +6,7 @@ hyperfine \
   './sqlite-lines-cli.sh' \
   './ndjson-cli.sh' \
   './duck.sh' \
+  './zq-json.sh' \
   './py.sh' \
   './py-pandas.sh' \
   './sqlite-utils.sh'

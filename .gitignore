@@ -6,3 +6,4 @@ spaces/
 *.db
 sqlite3-extra.c
 bench/**/results.json
+benchmarks/_data

@@ -28,7 +28,7 @@ dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c dist/lines.o
 	-DSQLITE_EXTRA_INIT=core_init \
 	-I./ dist/sqlite3-extra.c sqlite/shell.c dist/lines.o -o $@
 
-dist/lines.dylib: lines.c
+dist/lines0.dylib: lines.c
 	gcc -Isqlite \
 	-fPIC -shared \
 	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
