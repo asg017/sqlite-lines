@@ -2,7 +2,7 @@ import sqlite3
 import unittest
 import time
 
-EXT_PATH="./dist/lines"
+EXT_PATH="./dist/lines0"
 
 def connect():
   db = sqlite3.connect(":memory:")
