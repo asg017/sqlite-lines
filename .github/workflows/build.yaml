@@ -23,6 +23,7 @@ jobs:
           unzip sqlite-amalgamation-3380500.zip
           mv sqlite-amalgamation-3380500 sqlite
           rm sqlite-amalgamation-3380500.zip
+          mkdir -p dist/
           make dist/package.zip
           make test
       - name: distribution
