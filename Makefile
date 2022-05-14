@@ -18,7 +18,8 @@ dist/lines.o: lines.c lines.h
 	$< -o $@
 
 dist/sqlite-lines: cli.c dist/lines.o
-	gcc -Isqlite \
+	gcc -O3 \
+	-Isqlite \
 	sqlite/sqlite3.c \
 	cli.c dist/lines.o -o $@
 

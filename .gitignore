@@ -5,3 +5,4 @@ spaces/
 *.txt
 *.db
 sqlite3-extra.c
+bench/**/results.json
