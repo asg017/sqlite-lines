@@ -35,6 +35,7 @@ dist/lines.o: lines.c lines.h
 
 dist/sqlite-lines: cli.c dist/lines.o
 	gcc -O3 \
+	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-Isqlite \
 	sqlite/sqlite3.c \
 	cli.c dist/lines.o -o $@
