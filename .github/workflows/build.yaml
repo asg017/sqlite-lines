@@ -9,9 +9,6 @@ jobs:
         include:
           - os: ubuntu-latest
             asset: linux-sqlite-lines0
-          # 2022 uses python 3.9, which we need to have json funcs in sqlite for test.py.
-          - os: windows-2022
-            asset: windows-sqlite-lines0
           - os: macos-latest
             asset: macos-sqlite-lines0
 

@@ -6,8 +6,6 @@ LOADABLE_CFLAGS=-fPIC -shared
 
 ifeq ($(shell uname -s),Darwin)
 CONFIG_DARWIN=y
-else ifeq ($(OS),Windows_NT)
-CONFIG_WINDOWS=y
 else
 CONFIG_LINUX=y
 endif
@@ -18,11 +16,6 @@ endif
 
 ifdef CONFIG_LINUX
 LOADABLE_EXTENSION=so
-endif
-
-ifdef CONFIG_WINDOWS
-LOADABLE_EXTENSION=dll
-LOADABLE_CFLAGS=-shared
 endif
 
 DEFINE_SQLITE_LINES_DATE=-DSQLITE_LINES_DATE="\"$(DATE)\""
