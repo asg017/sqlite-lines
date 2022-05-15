@@ -18,6 +18,10 @@ ifdef CONFIG_LINUX
 LOADABLE_EXTENSION=so
 endif
 
+ifdef CONFIG_WINDOWS
+LOADABLE_EXTENSION=dll
+endif
+
 
 all: dist/package.zip
 
