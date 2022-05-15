@@ -46,7 +46,7 @@ dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c lines.c
 	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-DSQLITE_EXTRA_INIT=core_init \
-	-I./ -I./sqlite dist/sqlite3-extra.c sqlite/shell.c lines.cat -o $@
+	-I./ -I./sqlite dist/sqlite3-extra.c sqlite/shell.c lines.c -o $@
 
 dist/lines0.$(LOADABLE_EXTENSION): lines.c
 	gcc -Isqlite \
