@@ -2,6 +2,22 @@ COMMIT=$(shell git rev-parse HEAD)
 VERSION=v0.0.0
 DATE=$(shell date +'%FT%TZ%z')
 
+ifeq ($(shell uname -s),Darwin)
+CONFIG_DARWIN=y
+else ifeq ($(OS),Windows_NT)
+CONFIG_WINDOWS=y
+else
+CONFIG_LINUX=y
+endif
+
+ifdef CONFIG_DARWIN
+LOADABLE_EXTENSION=dylib
+endif
+
+ifdef CONFIG_LINUX
+LOADABLE_EXTENSION=so
+endif
+
 
 all: dist/package.zip
 
@@ -28,14 +44,14 @@ dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c dist/lines.o
 	-DSQLITE_EXTRA_INIT=core_init \
 	-I./ dist/sqlite3-extra.c sqlite/shell.c dist/lines.o -o $@
 
-dist/lines0.dylib: lines.c
+dist/lines0.$(LOADABLE_EXTENSION): lines.c
 	gcc -Isqlite \
 	-fPIC -shared \
 	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
 	$< -o $@
 
-dist/package.zip: dist/lines0.dylib dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
-	zip --junk-paths $@ dist/lines0.dylib  dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
+dist/package.zip: dist/lines0.$(LOADABLE_EXTENSION) dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
+	zip --junk-paths $@ dist/lines0.$(LOADABLE_EXTENSION)  dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
 
 
 test-watch:
@@ -52,7 +68,7 @@ test-cli: dist/sqlite-lines
 test-sqlite3: dist/sqlite3
 	python3 tests/test-sqlite3.py
 
-test-loadable: dist/lines0.dylib
+test-loadable: dist/lines0.$(LOADABLE_EXTENSION)
 	python3 tests/test-loadable.py
 
 test-watch-cli: dist/sqlite-lines tests/test-cli.py
@@ -61,8 +77,8 @@ test-watch-cli: dist/sqlite-lines tests/test-cli.py
 test-watch-sqlite3: dist/sqlite3
 	watchexec -w dist/sqlite3 -w tests/test-sqlite3.py -- make test-sqlite3
 
-test-watch-loadable: dist/lines0.dylib
-	watchexec -w dist/lines0.dylib -w tests/test-loadable.py -- make test-loadable
+test-watch-loadable: dist/lines0.$(LOADABLE_EXTENSION)
+	watchexec -w dist/lines0.$(LOADABLE_EXTENSION) -w tests/test-loadable.py -- make test-loadable
 
 .PHONY: all clean \
 	test test-watch test-cli test-loadable test-sqlite3 

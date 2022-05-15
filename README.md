@@ -13,6 +13,8 @@ dd if=/dev/zero of=test_files/big-line-line.txt bs=1000000 count=1001
 
 ## TODO
 
+- [ ] linux/windows supports
+- [ ] mac m1 arm builds
 - [ ] separate `lines()` and `lines_read()` functions
 - [ ] `sqlite3_limit` check on large lines
 - [ ] check that delim is 1 char long
