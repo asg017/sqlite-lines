@@ -33,7 +33,7 @@ dist/lines.o: lines.c lines.h
 	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
 	$< -o $@
 
-+dist/sqlite-lines: cli.c lines.c
+dist/sqlite-lines: cli.c lines.c
 	gcc -O3 \
 	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
