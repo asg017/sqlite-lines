@@ -31,8 +31,9 @@ class TestLines(unittest.TestCase):
       'lines_version',
     ])
   def test_modules(self):
-    funcs = list(map(lambda a: a[0], db.execute("select name from loaded_modules").fetchall()))
-    self.assertEqual(funcs, [
+    modules = list(map(lambda a: a[0], db.execute("select name from loaded_modules").fetchall()))
+    self.assertEqual(modules, [
+      "lines",
       "lines_read",
     ])
   def test_lines_version(self):

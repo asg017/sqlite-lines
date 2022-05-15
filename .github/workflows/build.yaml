@@ -8,9 +8,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            asset: linux-sqlite-lines0
+            asset: lines0-linux-amd64.zip
           - os: macos-latest
-            asset: macos-sqlite-lines0
+            asset: lines0-darwin-amd64.zip
 
     steps:
       - uses: actions/checkout@v2
@@ -25,4 +25,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{matrix.asset}}
-          path: dist
+          path: dist/package.zip

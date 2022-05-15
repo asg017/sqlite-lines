@@ -1,5 +1,8 @@
 <meta charset="utf8" />
 <html>
+  <body>
+    <div id="results">❌ test(s) failed, check console</div>
+  </body>
   <script src="../dist/sqljs.js"></script>
   <script type="module">
     import { html } from "https://cdn.skypack.dev/htl";
@@ -61,14 +64,13 @@
       printResults("select 1+1, lines_version(), lines_debug()");
 
       printResults(
-        `select rowid, contents from lines_read(cast('a
+        `select rowid, contents from lines('a
 b
 c
 d
-e' as blob))`
+e')`
       );
+      document.querySelector("#results").innerText = "✅ tests passed";
     });
   </script>
-
-  <body></body>
 </html>

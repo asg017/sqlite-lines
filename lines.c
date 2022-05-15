@@ -50,7 +50,7 @@ struct lines_read_cursor {
 **    (2) Tell SQLite (via the sqlite3_declare_vtab() interface) what the
 **        result set of queries against lines_read will look like.
 */
-static int linesReadConnect(
+static int linesConnect(
   sqlite3 *db,
   void *pUnused,
   int argcUnused, const char *const*argvUnused,
@@ -89,7 +89,7 @@ static int linesReadConnect(
 /*
 ** This method is the destructor for lines_read_cursor objects.
 */
-static int linesReadDisconnect(sqlite3_vtab *pVtab){
+static int linesDisconnect(sqlite3_vtab *pVtab){
   sqlite3_free(pVtab);
   return SQLITE_OK;
 }
@@ -97,7 +97,7 @@ static int linesReadDisconnect(sqlite3_vtab *pVtab){
 /*
 ** Constructor for a new lines_read_cursor object.
 */
-static int linesReadOpen(sqlite3_vtab *pUnused, sqlite3_vtab_cursor **ppCursor){
+static int linesOpen(sqlite3_vtab *pUnused, sqlite3_vtab_cursor **ppCursor){
   lines_read_cursor *pCur;
   (void)pUnused;
   pCur = sqlite3_malloc( sizeof(*pCur) );
@@ -110,7 +110,7 @@ static int linesReadOpen(sqlite3_vtab *pUnused, sqlite3_vtab_cursor **ppCursor){
 /*
 ** Destructor for a lines_read_cursor.
 */
-static int linesReadClose(sqlite3_vtab_cursor *cur){
+static int linesClose(sqlite3_vtab_cursor *cur){
   lines_read_cursor *pCur = (lines_read_cursor*)cur;
   fclose(pCur->fp);
   sqlite3_free(cur);
@@ -121,7 +121,7 @@ static int linesReadClose(sqlite3_vtab_cursor *cur){
 /*
 ** Advance a lines_read_cursor to its next row of output.
 */
-static int linesReadNext(sqlite3_vtab_cursor *cur){
+static int linesNext(sqlite3_vtab_cursor *cur){
   lines_read_cursor *pCur = (lines_read_cursor*)cur;
   pCur->iRowid++;
   size_t len = 0;
@@ -133,7 +133,7 @@ static int linesReadNext(sqlite3_vtab_cursor *cur){
 ** Return TRUE if the cursor has been moved off of the last
 ** row of output.
 */
-static int linesReadEof(sqlite3_vtab_cursor *cur){
+static int linesEof(sqlite3_vtab_cursor *cur){
   lines_read_cursor *pCur = (lines_read_cursor*)cur;
   if(pCur->idxNum==LINES_READ_INDEX_ROWID_EQ) {
     if(pCur->rowid_eq_yielded) return 1;
@@ -147,7 +147,7 @@ static int linesReadEof(sqlite3_vtab_cursor *cur){
 ** Return values of columns for the row at which the lines_read_cursor
 ** is currently pointing.
 */
-static int linesReadColumn(
+static int linesColumn(
   sqlite3_vtab_cursor *cur,   /* The cursor */
   sqlite3_context *ctx,       /* First argument to sqlite3_result_...() */
   int i                       /* Which column to return */
@@ -174,7 +174,7 @@ static int linesReadColumn(
 ** first row returned is assigned rowid value 1, and each subsequent
 ** row a value 1 more than that of the previous.
 */
-static int linesReadRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid){
+static int linesRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid){
   lines_read_cursor *pCur = (lines_read_cursor*)cur;
   *pRowid = pCur->iRowid;
   return SQLITE_OK;
@@ -189,6 +189,49 @@ static int linesReadRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid){
 ** is pointing at the first row, or pointing off the end of the table
 ** (so that xEof() will return true) if the table is empty.
 */
+static int linesFilter(
+  sqlite3_vtab_cursor *pVtabCursor, 
+  int idxNum, const char *idxStrUnused,
+  int argc, sqlite3_value **argv
+){
+  lines_read_cursor *pCur = (lines_read_cursor *)pVtabCursor;
+  if(pCur->fp != NULL) {
+    fclose(pCur->fp);
+  }
+  char delim = '\n';
+  if(argc > 1) {
+    const char * s = (const char * ) sqlite3_value_text(argv[1]);
+    delim = s[0];
+  }
+  int nByte = sqlite3_value_bytes(argv[0]);
+  void *pData = (void *) sqlite3_value_blob(argv[0]);
+  int errnum;
+  pCur->fp = fmemopen(pData, nByte, "r");
+  if (pCur->fp == NULL) {
+    int errnum;
+    errnum = errno;
+    fprintf(stderr, "Error reading, size=%d: %s\n", nByte, strerror( errnum ));
+    return SQLITE_ERROR;
+  }
+  size_t len = 0;
+  pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
+  pCur->iRowid = 0;
+  pCur->delim = delim;
+  pCur->idxNum = idxNum;
+
+  if(pCur->idxNum == LINES_READ_INDEX_ROWID_EQ) {
+    pCur->rowid_eq_yielded = 0;
+    int targetRowid = sqlite3_value_int64(argv[2]);
+    while(pCur->iRowid < targetRowid && pCur->curLineLength >= 0) {
+      size_t len = 0;
+  
+      pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
+      pCur->iRowid++;
+    }
+  } 
+  return SQLITE_OK;
+}
+
 static int linesReadFilter(
   sqlite3_vtab_cursor *pVtabCursor, 
   int idxNum, const char *idxStrUnused,
@@ -203,35 +246,17 @@ static int linesReadFilter(
     const char * s = (const char * ) sqlite3_value_text(argv[1]);
     delim = s[0];
   }
-  switch(sqlite3_value_type(argv[0])) {
-    case SQLITE_TEXT: {
-      const char * path = (const char * ) sqlite3_value_text(argv[0]);
-  
-      int errnum;
-      pCur->fp = fopen(path, "r");
-      if (pCur->fp == NULL) {
-        int errnum;
-        errnum = errno;
-        fprintf(stderr, "Error opening file at %s: %s\n", path, strerror( errnum ));
-        return SQLITE_ERROR;
-      }
-      break;
-    }
-    case SQLITE_BLOB: {
-      int nByte = sqlite3_value_bytes(argv[0]);
-      void *pData = (void *) sqlite3_value_blob(argv[0]);
-      int errnum;
-      pCur->fp = fmemopen(pData, nByte, "r");
-      if (pCur->fp == NULL) {
-        int errnum;
-        errnum = errno;
-        fprintf(stderr, "Error reading, size=%d: %s\n", nByte, strerror( errnum ));
-        return SQLITE_ERROR;
-      }
-      break;
-    }
+  const char * path = (const char * ) sqlite3_value_text(argv[0]);
 
+  int errnum;
+  pCur->fp = fopen(path, "r");
+  if (pCur->fp == NULL) {
+    int errnum;
+    errnum = errno;
+    fprintf(stderr, "Error opening file at %s: %s\n", path, strerror( errnum ));
+    return SQLITE_ERROR;
   }
+
   size_t len = 0;
   pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
   pCur->iRowid = 0;
@@ -241,18 +266,12 @@ static int linesReadFilter(
   if(pCur->idxNum == LINES_READ_INDEX_ROWID_EQ) {
     pCur->rowid_eq_yielded = 0;
     int targetRowid = sqlite3_value_int64(argv[2]);
-    //printf("rowid eq, argc=%d, targetRowid=%d, pCur->curLineLength=%d\n", argc, targetRowid, pCur->curLineLength);
     while(pCur->iRowid < targetRowid && pCur->curLineLength >= 0) {
-      //printf("loop %d\n", pCur->curLineLength);
       size_t len = 0;
-  
       pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
       pCur->iRowid++;
     }
-    //printf("rowid eq, pCur->iRowid=%d, pCur->curLineLength=%d\n", pCur->iRowid, pCur->curLineLength);
   }
-  //pCur->curLineLength = 0;  
-  //pCur->curLineContents = 0;    
   return SQLITE_OK;
 }
 
@@ -262,7 +281,7 @@ static int linesReadFilter(
 ** a query plan for each invocation and compute an estimated cost for that
 ** plan.
 */
-static int linesReadBestIndex(
+static int linesBestIndex(
   sqlite3_vtab *pVTab,
   sqlite3_index_info *pIdxInfo
 ){
@@ -320,24 +339,47 @@ static int linesReadBestIndex(
   return SQLITE_OK;
 }
 
-/*
-** This following structure defines all the methods for the 
-** lines_read virtual table.
-*/
+static sqlite3_module linesModule = {
+  0,                         /* iVersion */
+  0,                         /* xCreate */
+  linesConnect,              /* xConnect */
+  linesBestIndex,            /* xBestIndex */
+  linesDisconnect,           /* xDisconnect */
+  0,                         /* xDestroy */
+  linesOpen,                 /* xOpen - open a cursor */
+  linesClose,                /* xClose - close a cursor */
+  linesFilter,               /* xFilter - configure scan constraints */
+  linesNext,                 /* xNext - advance a cursor */
+  linesEof,                  /* xEof - check for end of scan */
+  linesColumn,               /* xColumn - read data */
+  linesRowid,                /* xRowid - read data */
+  0,                         /* xUpdate */
+  0,                         /* xBegin */
+  0,                         /* xSync */
+  0,                         /* xCommit */
+  0,                         /* xRollback */
+  0,                         /* xFindMethod */
+  0,                         /* xRename */
+  0,                         /* xSavepoint */
+  0,                         /* xRelease */
+  0,                         /* xRollbackTo */
+  0                          /* xShadowName */
+};
+
 static sqlite3_module linesReadModule = {
   0,                         /* iVersion */
   0,                         /* xCreate */
-  linesReadConnect,             /* xConnect */
-  linesReadBestIndex,           /* xBestIndex */
-  linesReadDisconnect,          /* xDisconnect */
+  linesConnect,              /* xConnect */
+  linesBestIndex,            /* xBestIndex */
+  linesDisconnect,           /* xDisconnect */
   0,                         /* xDestroy */
-  linesReadOpen,                /* xOpen - open a cursor */
-  linesReadClose,               /* xClose - close a cursor */
-  linesReadFilter,              /* xFilter - configure scan constraints */
-  linesReadNext,                /* xNext - advance a cursor */
-  linesReadEof,                 /* xEof - check for end of scan */
-  linesReadColumn,              /* xColumn - read data */
-  linesReadRowid,               /* xRowid - read data */
+  linesOpen,                 /* xOpen - open a cursor */
+  linesClose,                /* xClose - close a cursor */
+  linesReadFilter,           /* xFilter - configure scan constraints */
+  linesNext,                 /* xNext - advance a cursor */
+  linesEof,                  /* xEof - check for end of scan */
+  linesColumn,               /* xColumn - read data */
+  linesRowid,                /* xRowid - read data */
   0,                         /* xUpdate */
   0,                         /* xBegin */
   0,                         /* xSync */
@@ -365,6 +407,7 @@ int sqlite3_lines_init(
   if(rc == SQLITE_OK) rc = sqlite3_create_function(db, "lines_version", 0, SQLITE_UTF8|SQLITE_INNOCUOUS|SQLITE_DETERMINISTIC, 0, linesVersionFunc, 0, 0); 
   if(rc == SQLITE_OK) rc = sqlite3_create_function(db, "lines_debug", 0, SQLITE_UTF8|SQLITE_INNOCUOUS|SQLITE_DETERMINISTIC, 0, linesDebugFunc, 0, 0); 
 
+  if(rc == SQLITE_OK) rc = sqlite3_create_module(db, "lines", &linesModule, 0);
   if(rc == SQLITE_OK) rc = sqlite3_create_module(db, "lines_read", &linesReadModule, 0);
   return rc;
 }

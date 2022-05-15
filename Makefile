@@ -1,5 +1,5 @@
 COMMIT=$(shell git rev-parse HEAD)
-VERSION=v0.0.0
+VERSION=v0.0.-1
 DATE=$(shell date +'%FT%TZ%z')
 
 LOADABLE_CFLAGS=-fPIC -shared
@@ -19,30 +19,34 @@ LOADABLE_EXTENSION=so
 endif
 
 DEFINE_SQLITE_LINES_DATE=-DSQLITE_LINES_DATE="\"$(DATE)\""
+DEFINE_SQLITE_LINES_VERSION=-DSQLITE_LINES_VERSION="\"$(VERSION)\""
 
 TARGET_OBJ=dist/lines.o
 TARGET_CLI=dist/sqlite-lines
 TARGET_LOADABLE=dist/lines0.$(LOADABLE_EXTENSION)
 TARAGET_SQLITE3=dist/sqlite3
 TARGET_PACKAGE=dist/package.zip
+TARGET_SQLJS_JS=dist/sqljs.js
+TARGET_SQLJS_WASM=dist/sqljs.wasm
+TARGET_SQLJS=$(TARGET_SQLJS_JS) $(TARGET_SQLJS_WASM)
 
-all: dist/package.zip
+all: dist/package.zip $(TARGET_SQLJS)
 
 clean:
 	rm dist/*
 
-dist/package.zip: $(TARGET_LOADABLE) $(TARGET_OBJ) lines.h $(TARAGET_SQLITE3) $(TARGET_CLI)
-	zip --junk-paths $@ $(TARGET_LOADABLE)  $(TARGET_OBJ) lines.h $(TARAGET_SQLITE3) $(TARGET_CLI)
+$(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_OBJ) lines.h lines.c $(TARAGET_SQLITE3) $(TARGET_CLI)
+	zip --junk-paths $@ $(TARGET_LOADABLE)  $(TARGET_OBJ) lines.h lines.c $(TARAGET_SQLITE3) $(TARGET_CLI)
 
 $(TARGET_LOADABLE): lines.c
 	gcc -Isqlite \
 	$(LOADABLE_CFLAGS) \
-	$(DEFINE_SQLITE_LINES_DATE) \
+	$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) \
 	$< -o $@
 
 $(TARGET_CLI): cli.c lines.c
 	gcc -O3 \
-	 $(DEFINE_SQLITE_LINES_DATE) \
+	 $(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-Isqlite \
 	sqlite/sqlite3.c \
@@ -50,7 +54,7 @@ $(TARGET_CLI): cli.c lines.c
 
 dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c lines.c
 	gcc \
-	$(DEFINE_SQLITE_LINES_DATE) \
+	$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-DSQLITE_EXTRA_INIT=core_init \
 	-I./ -I./sqlite dist/sqlite3-extra.c sqlite/shell.c lines.c -o $@
@@ -93,7 +97,7 @@ test-watch-loadable: $(TARGET_LOADABLE)
 .PHONY: all clean \
 	test test-watch test-cli test-loadable test-sqlite3 
 
-CFLAGS = \
+SQLJS_CFLAGS = \
 	-O2 \
 	-DSQLITE_OMIT_LOAD_EXTENSION \
 	-DSQLITE_DISABLE_LFS \
@@ -102,10 +106,10 @@ CFLAGS = \
 	-DSQLITE_ENABLE_JSON1 \
 	-DSQLITE_THREADSAFE=0 \
 	-DSQLITE_ENABLE_NORMALIZE \
-	$(DEFINE_SQLITE_LINES_DATE) \
+	$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) \
 	-DSQLITE_EXTRA_INIT=core_init
 
-EMFLAGS = \
+SQLJS_EMFLAGS = \
 	--memory-init-file 0 \
 	-s RESERVED_FUNCTION_POINTERS=64 \
 	-s ALLOW_TABLE_GROWTH=1 \
@@ -117,29 +121,26 @@ EMFLAGS = \
 	-s LLD_REPORT_UNDEFINED
 
 
-EMFLAGS_WASM = \
+SQLJS_EMFLAGS_WASM = \
 	-s WASM=1 \
 	-s ALLOW_MEMORY_GROWTH=1
 
-EMFLAGS_OPTIMIZED= \
+SQLJS_EMFLAGS_OPTIMIZED= \
 	-s INLINING_LIMIT=50 \
 	-O3 \
 	-flto \
 	--closure 1
 
-EMFLAGS_DEBUG = \
+SQLJS_EMFLAGS_DEBUG = \
 	-s INLINING_LIMIT=10 \
 	-s ASSERTIONS=1 \
 	-O1
 
-SQLJS_JS=dist/sqljs.js
-SQLJS_WASM=dist/sqljs.wasm
-
-$(SQLJS_JS) $(SQLJS_WASM): $(shell find wasm/ -type f) lines.c sqlite3-extra.c
-	emcc $(CFLAGS) $(EMFLAGS) $(EMFLAGS_DEBUG) $(EMFLAGS_WASM) \
+$(TARGET_SQLJS): $(shell find wasm/ -type f) lines.c sqlite3-extra.c
+	emcc $(SQLJS_CFLAGS) $(SQLJS_EMFLAGS) $(SQLJS_EMFLAGS_DEBUG) $(SQLJS_EMFLAGS_WASM) \
 		-I./sqlite -I./ lines.c sqlite3-extra.c \
 		--pre-js wasm/api.js \
-		-o $(SQLJS_JS)
-	mv $(SQLJS_JS) tmp.js
-	cat wasm/shell-pre.js tmp.js wasm/shell-post.js > $(SQLJS_JS)
+		-o $(TARGET_SQLJS_JS)
+	mv $(TARGET_SQLJS_JS) tmp.js
+	cat wasm/shell-pre.js tmp.js wasm/shell-post.js > $(TARGET_SQLJS_JS)
 	rm tmp.js
