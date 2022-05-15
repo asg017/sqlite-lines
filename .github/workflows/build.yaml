@@ -21,10 +21,6 @@ jobs:
         env:
           ENV: CI
         run: |
-          wget -q https://www.sqlite.org/2022/sqlite-amalgamation-3380500.zip
-          unzip sqlite-amalgamation-3380500.zip
-          mv sqlite-amalgamation-3380500 sqlite
-          rm sqlite-amalgamation-3380500.zip
           mkdir -p dist/
           make dist/package.zip
           make test

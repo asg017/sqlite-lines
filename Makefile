@@ -91,18 +91,6 @@ test-watch-loadable: dist/lines0.$(LOADABLE_EXTENSION)
 .PHONY: all clean \
 	test test-watch test-cli test-loadable test-sqlite3 
 
-x:
-	wget -O sqlite.tar.gz https://sqlite.org/2022/sqlite-autoconf-3380000.tar.gz
-	tar xf sqlite.tar.gz
-	rm sqlite.tar.gz
-	mv sqlite-autoconf-3380000 sqlite
-
-	cd sqlite
-
-	./configure --enable-readline
-
-	make	
-
 CFLAGS = \
 	-O2 \
 	-DSQLITE_OMIT_LOAD_EXTENSION \

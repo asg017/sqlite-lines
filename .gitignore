@@ -1,6 +1,4 @@
-sqlite/
 dist/
-spaces/
 *.dylib
 *.db
 sqlite3-extra.c
