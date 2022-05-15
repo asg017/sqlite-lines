@@ -41,7 +41,7 @@ dist/sqlite-lines: cli.c dist/lines.o
 
 dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c dist/lines.o
 	gcc \
-	 -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION \
+	 -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-DSQLITE_EXTRA_INIT=core_init \
 	-I./ dist/sqlite3-extra.c sqlite/shell.c dist/lines.o -o $@
 
