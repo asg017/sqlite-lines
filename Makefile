@@ -2,6 +2,8 @@ COMMIT=$(shell git rev-parse HEAD)
 VERSION=v0.0.0
 DATE=$(shell date +'%FT%TZ%z')
 
+LOADABLE_CFLAGS=-fPIC -shared
+
 ifeq ($(shell uname -s),Darwin)
 CONFIG_DARWIN=y
 else ifeq ($(OS),Windows_NT)
@@ -20,26 +22,34 @@ endif
 
 ifdef CONFIG_WINDOWS
 LOADABLE_EXTENSION=dll
+LOADABLE_CFLAGS=-shared
 endif
 
+DEFINE_SQLITE_LINES_DATE=-DSQLITE_LINES_DATE="\"$(DATE)\""
+
+TARGET_OBJ=dist/lines.o
+TARGET_CLI=dist/sqlite-lines
+TARGET_LOADABLE=dist/lines0.$(LOADABLE_EXTENSION)
+TARAGET_SQLITE3=dist/sqlite3
+TARGET_PACKAGE=dist/package.zip
 
 all: dist/package.zip
 
 clean:
 	rm dist/*
 
-dist/sqlite3-extra.c: sqlite/sqlite3.c core_init.c
-	cat sqlite/sqlite3.c core_init.c > $@
+dist/package.zip: $(TARGET_LOADABLE) $(TARGET_OBJ) lines.h $(TARAGET_SQLITE3) $(TARGET_CLI)
+	zip --junk-paths $@ $(TARGET_LOADABLE)  $(TARGET_OBJ) lines.h $(TARAGET_SQLITE3) $(TARGET_CLI)
 
-dist/lines.o: lines.c lines.h
+$(TARGET_LOADABLE): lines.c
 	gcc -Isqlite \
-	-c \
-	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
+	$(LOADABLE_CFLAGS) \
+	$(DEFINE_SQLITE_LINES_DATE) \
 	$< -o $@
 
-dist/sqlite-lines: cli.c lines.c
+$(TARGET_CLI): cli.c lines.c
 	gcc -O3 \
-	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
+	 $(DEFINE_SQLITE_LINES_DATE) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-Isqlite \
 	sqlite/sqlite3.c \
@@ -47,46 +57,45 @@ dist/sqlite-lines: cli.c lines.c
 
 dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c lines.c
 	gcc \
-	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
+	$(DEFINE_SQLITE_LINES_DATE) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-DSQLITE_EXTRA_INIT=core_init \
 	-I./ -I./sqlite dist/sqlite3-extra.c sqlite/shell.c lines.c -o $@
 
-dist/lines0.$(LOADABLE_EXTENSION): lines.c
+$(TARGET_OBJ): lines.c lines.h
 	gcc -Isqlite \
-	-fPIC -shared \
+	-c \
 	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
 	$< -o $@
 
-dist/package.zip: dist/lines0.$(LOADABLE_EXTENSION) dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
-	zip --junk-paths $@ dist/lines0.$(LOADABLE_EXTENSION)  dist/lines.o lines.h dist/sqlite3 dist/sqlite-lines
-
-
-test-watch:
-	watchexec -w lines.c -w tests/ -w tests/ --clear make test
+dist/sqlite3-extra.c: sqlite/sqlite3.c core_init.c
+	cat sqlite/sqlite3.c core_init.c > $@
 
 test: 
 	make test-cli
 	make test-loadable
 	make test-sqlite3
 
-test-cli: dist/sqlite-lines
+test-cli: $(TARGET_CLI)
 	python3 tests/test-cli.py
 
-test-sqlite3: dist/sqlite3
+test-sqlite3: $(TARAGET_SQLITE3)
 	python3 tests/test-sqlite3.py
 
-test-loadable: dist/lines0.$(LOADABLE_EXTENSION)
+test-loadable: $(TARGET_LOADABLE)
 	python3 tests/test-loadable.py
 
-test-watch-cli: dist/sqlite-lines tests/test-cli.py
+test-watch:
+	watchexec -w lines.c -w tests/ -w tests/ --clear make test
+
+test-watch-cli: $(TARGET_CLI) tests/test-cli.py
 	watchexec -w cli.c -w dist/sqlite-lines -w tests/test-cli.py --clear -- make test-cli
 
-test-watch-sqlite3: dist/sqlite3
-	watchexec -w dist/sqlite3 -w tests/test-sqlite3.py -- make test-sqlite3
+test-watch-sqlite3: $(TARAGET_SQLITE3)
+	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py -- make test-sqlite3
 
-test-watch-loadable: dist/lines0.$(LOADABLE_EXTENSION)
-	watchexec -w dist/lines0.$(LOADABLE_EXTENSION) -w tests/test-loadable.py -- make test-loadable
+test-watch-loadable: $(TARGET_LOADABLE)
+	watchexec -w $(TARGET_LOADABLE) -w tests/test-loadable.py -- make test-loadable
 
 .PHONY: all clean \
 	test test-watch test-cli test-loadable test-sqlite3 
@@ -100,7 +109,7 @@ CFLAGS = \
 	-DSQLITE_ENABLE_JSON1 \
 	-DSQLITE_THREADSAFE=0 \
 	-DSQLITE_ENABLE_NORMALIZE \
-	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
+	$(DEFINE_SQLITE_LINES_DATE) \
 	-DSQLITE_EXTRA_INIT=core_init
 
 EMFLAGS = \
