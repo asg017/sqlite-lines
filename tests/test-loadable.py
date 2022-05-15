@@ -1,6 +1,7 @@
 import sqlite3
 import unittest
 import time
+import os
 
 EXT_PATH="./dist/lines0"
 
@@ -73,6 +74,10 @@ class TestLines(unittest.TestCase):
     ])
   
   def test_lines_read_big(self):
+    if os.environ.get('ENV') == "CI":
+      self.skipTest("Skipping large file testing on CI environments"
+      )
+    
     s1 = time.process_time()
     d = db.execute("select count(*) as count from lines_read(?);", ['test_files/big.txt']).fetchall()
     e1 = time.process_time()
@@ -95,6 +100,10 @@ class TestLines(unittest.TestCase):
     self.assertEqual(d[0]["detail"], "SCAN lines_read VIRTUAL TABLE INDEX 2:")
     
   def test_lines_read_big_1line(self):
+    if os.environ.get('ENV') == "CI":
+      self.skipTest("Skipping large file testing on CI environments"
+      )
+    
     # TODO should be caught and thrown as OperationalError at sqlite_lines-level (with sqlite3_limit) and not sqlite-level
     with self.assertRaisesRegex(sqlite3.DataError, 'string or blob too big'):
       db.execute("select length(contents) from lines_read('test_files/big-line-line.txt');").fetchall()

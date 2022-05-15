@@ -2,8 +2,9 @@ sqlite/
 dist/
 spaces/
 *.dylib
-*.txt
 *.db
 sqlite3-extra.c
 bench/**/results.json
 benchmarks/_data
+test_files/big-line-line.txt
+test_files/big.txt
