@@ -1,7 +1,14 @@
 #include <sqlite3.h>
 #include <stdio.h>
 #include "lines.h"
-
+// TODO
+//  1. version
+//  2. insert
+//  3. --where, --groupby ?
+//  4. --header?
+//  5. CSV output proper?
+//  6. JSON output?
+//  7. --input or -i file
 int main(int argc, char *argv[]) {
     sqlite3 *db;
     sqlite3_stmt *stmt;

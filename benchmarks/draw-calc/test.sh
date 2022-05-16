@@ -25,9 +25,9 @@ if [ "$NDJSON_CLI" != "3104740" ]; then
   exit 1
 fi
 
-PY_PANDAS=`./py-pandas.sh`
-if [ "$PY_PANDAS" != "3104740" ]; then
-  echo "❌ failed py-pandas"
+DSQ=`./dsq.sh`
+if [ "$DSQ" != "[{\"total\":3104740}]" ]; then
+  echo "❌ failed dsq"
   exit 1
 fi
 
@@ -40,6 +40,12 @@ fi
 SQLITE_UTILS=`./sqlite-utils.sh`
 if [ "$SQLITE_UTILS" != "3104740" ]; then
   echo "❌ failed sqlite-utils"
+  exit 1
+fi
+
+PY_PANDAS=`./py-pandas.sh`
+if [ "$PY_PANDAS" != "3104740" ]; then
+  echo "❌ failed py-pandas"
   exit 1
 fi
 
