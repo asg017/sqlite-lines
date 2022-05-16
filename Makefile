@@ -40,8 +40,8 @@ cli: $(TARGET_CLI)
 sqlite3: $(TARAGET_SQLITE3)
 wasm: $(TARGET_SQLJS)
 
-$(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_OBJ) lines.h lines.c $(TARAGET_SQLITE3) $(TARGET_CLI)
-	zip --junk-paths $@ $(TARGET_LOADABLE)  $(TARGET_OBJ) lines.h lines.c $(TARAGET_SQLITE3) $(TARGET_CLI)
+$(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
+	zip --junk-paths $@ $(TARGET_LOADABLE)  $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
 
 $(TARGET_LOADABLE): lines.c
 	gcc -Isqlite \
