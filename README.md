@@ -1,11 +1,6 @@
 # sqlite-lines
 
 ```
-cat /Volumes/Sandisk1/draw/face.ndjson | time ndjson-reduce 'p += d.drawing.length' 0
-cat /Volumes/Sandisk1/draw/face.ndjson | time ./a.out 'sum(json_array_length(contents, "$.drawing"))'
-```
-
-```
 seq 1 1000000 > test_files/big.txt
 
 dd if=/dev/zero of=test_files/big-line-line.txt bs=1000000 count=1001
@@ -13,9 +8,6 @@ dd if=/dev/zero of=test_files/big-line-line.txt bs=1000000 count=1001
 
 ## TODO
 
-- [ ] linux/windows supports
-- [ ] mac m1 arm builds
-- [ ] separate `lines()` and `lines_read()` functions
 - [ ] `sqlite3_limit` check on large lines
 - [ ] check that delim is 1 char long
 - [ ] handle `SQLITE_INDEX_CONSTRAINT_GT` etc. on rowid
@@ -24,12 +16,7 @@ dd if=/dev/zero of=test_files/big-line-line.txt bs=1000000 count=1001
 - [ ] maybe `lines_stdin` table?
 - [ ] more benchmarks
 - [ ] parse log examples
-- [ ] linux/windows support
-- [ ] mac m1 support?
 - [ ] what CLI do
-- [ ] js/WASM output?
-- [ ] test `dist/sqlite3`
-- [ ] test `dist/cli`
 
 ### Maybe future
 

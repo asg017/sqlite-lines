@@ -38,11 +38,11 @@ class TestLines(unittest.TestCase):
     ])
   def test_lines_version(self):
     v, = db.execute("select lines_version()").fetchone()
-    self.assertEqual(v, "0.0.0")
+    self.assertEqual(v, "v0.0.-1")
 
   def test_lines_debug(self):
     debug, = db.execute("select lines_debug()").fetchone()
-    self.assertEqual(debug.split('\n')[0], "Version: 0.0.0")
+    self.assertEqual(debug.split('\n')[0], "Version: v0.0.-1")
     self.assertTrue(debug.split('\n')[1].startswith("Date: "))
 
   def test_lines_read(self):

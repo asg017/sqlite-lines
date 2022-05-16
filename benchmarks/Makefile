@@ -5,7 +5,7 @@ draw-calc.png: ./draw-calc/results.json
 		--redefine-file=data:json:./draw-calc/results.json \
 		--redefine-file=highlight:json:<(echo '["./sqlite-lines.sh"]') \
 		'--redefine=compareTo:./sqlite-lines.sh' \
-		'--redefine=title:Reading a 185MB NDJSON file with 321k objects and performing a small calculation' \
+		'--redefine=title:Aggregate a 185MB NDJSON file with 321k objects' \
 		'--redefine=footer:Ran on Macbook etc.' \
 		-o $@
 

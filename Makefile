@@ -24,7 +24,7 @@ DEFINE_SQLITE_LINES_VERSION=-DSQLITE_LINES_VERSION="\"$(VERSION)\""
 TARGET_OBJ=dist/lines.o
 TARGET_CLI=dist/sqlite-lines
 TARGET_LOADABLE=dist/lines0.$(LOADABLE_EXTENSION)
-TARAGET_SQLITE3=dist/sqlite3
+TARGET_SQLITE3=dist/sqlite3
 TARGET_PACKAGE=dist/package.zip
 TARGET_SQLJS_JS=dist/sqljs.js
 TARGET_SQLJS_WASM=dist/sqljs.wasm
@@ -34,6 +34,11 @@ all: dist/package.zip $(TARGET_SQLJS)
 
 clean:
 	rm dist/*
+
+loadable: $(TARGET_LOADABLE)
+cli: $(TARGET_CLI)
+sqlite3: $(TARAGET_SQLITE3)
+wasm: $(TARGET_SQLJS)
 
 $(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_OBJ) lines.h lines.c $(TARAGET_SQLITE3) $(TARGET_CLI)
 	zip --junk-paths $@ $(TARGET_LOADABLE)  $(TARGET_OBJ) lines.h lines.c $(TARAGET_SQLITE3) $(TARGET_CLI)
@@ -52,7 +57,7 @@ $(TARGET_CLI): cli.c lines.c
 	sqlite/sqlite3.c \
 	cli.c lines.c -o $@
 
-dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c lines.c
+$(TARGET_SQLITE3): dist/sqlite3-extra.c sqlite/shell.c lines.c
 	gcc \
 	$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
@@ -62,7 +67,7 @@ dist/sqlite3: dist/sqlite3-extra.c sqlite/shell.c lines.c
 $(TARGET_OBJ): lines.c lines.h
 	gcc -Isqlite \
 	-c \
-	-DSQLITE_LINES_DATE="\"$(DATE)\"" \
+	$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) \
 	$< -o $@
 
 dist/sqlite3-extra.c: sqlite/sqlite3.c core_init.c
@@ -85,28 +90,29 @@ test-loadable: $(TARGET_LOADABLE)
 test-watch:
 	watchexec -w lines.c -w tests/ -w tests/ --clear make test
 
+test-watch-loadable: $(TARGET_LOADABLE)
+	watchexec -w $(TARGET_LOADABLE) -w tests/test-loadable.py -- make test-loadable
+
 test-watch-cli: $(TARGET_CLI) tests/test-cli.py
 	watchexec -w cli.c -w dist/sqlite-lines -w tests/test-cli.py --clear -- make test-cli
 
 test-watch-sqlite3: $(TARAGET_SQLITE3)
 	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py -- make test-sqlite3
 
-test-watch-loadable: $(TARGET_LOADABLE)
-	watchexec -w $(TARGET_LOADABLE) -w tests/test-loadable.py -- make test-loadable
-
 .PHONY: all clean \
-	test test-watch test-cli test-loadable test-sqlite3 
+	test test-watch test-watch-loadable test-watch-cli test-watch-sqlite3\
+	test-loadable test-cli test-sqlite3 \
+	loadable cli sqlite3 wasm
 
+# WASM has no (easy) filesystem for the demo, so disable lines_read
 SQLJS_CFLAGS = \
 	-O2 \
 	-DSQLITE_OMIT_LOAD_EXTENSION \
 	-DSQLITE_DISABLE_LFS \
-	-DSQLITE_ENABLE_FTS3 \
-	-DSQLITE_ENABLE_FTS3_PARENTHESIS \
 	-DSQLITE_ENABLE_JSON1 \
 	-DSQLITE_THREADSAFE=0 \
 	-DSQLITE_ENABLE_NORMALIZE \
-	$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) \
+	$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) -DSQLITE_LINES_DISABLE_FILESYSTEM \
 	-DSQLITE_EXTRA_INIT=core_init
 
 SQLJS_EMFLAGS = \
@@ -119,7 +125,6 @@ SQLJS_EMFLAGS = \
 	-s NODEJS_CATCH_EXIT=0 \
 	-s NODEJS_CATCH_REJECTION=0 \
 	-s LLD_REPORT_UNDEFINED
-
 
 SQLJS_EMFLAGS_WASM = \
 	-s WASM=1 \
