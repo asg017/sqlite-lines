@@ -13,7 +13,7 @@ module.exports = async ({ github, context }) => {
 
   const release_id = release.data.id;
   async function uploadReleaseAsset(name, path) {
-    console.log("Uploading", name, "at", file);
+    console.log("Uploading", name, "at", path);
 
     return github.rest.repos.uploadReleaseAsset({
       owner,
