@@ -174,12 +174,21 @@ static int linesColumn(
   sqlite3_int64 x = 0;
   switch( i ){
     case LINES_READ_COLUMN_LINE: {
+      // If the line ends in the delimiter character, then shave it off. 
+      // If the delimter is '\n' and the line ends with '\r\n', then also
+      // shave  off that '\r', to support CRLF files.
       int trim = 0;
       if(pCur->curLineLength > 0 && pCur->curLineContents[pCur->curLineLength-1] == pCur->delim) {
-        if(pCur->curLineLength > 1 && pCur->curLineContents[pCur->curLineLength-2] == '\r') trim = 2;
+        if(pCur->curLineLength > 1 && pCur->curLineContents[pCur->curLineLength-1] == '\n' && pCur->curLineContents[pCur->curLineLength-2] == '\r') trim = 2;
         else trim = 1;
       }
-
+      sqlite3 *db = sqlite3_context_db_handle(ctx);
+      int mxBlob = sqlite3_limit(db, SQLITE_LIMIT_LENGTH, -1);
+      if( pCur->curLineLength>mxBlob ){
+        sqlite3_result_error_code(ctx, SQLITE_TOOBIG);
+        sqlite3_result_error(ctx, sqlite3_mprintf("line %d has a size of %d bytes, but SQLITE_LIMIT_LENGTH is %d", pCur->iRowid, pCur->curLineLength, mxBlob), -1);
+        return SQLITE_ERROR;
+      }
       sqlite3_result_text(ctx, pCur->curLineContents, pCur->curLineLength-trim, SQLITE_TRANSIENT);
       break;
     }
@@ -187,10 +196,10 @@ static int linesColumn(
       sqlite3_result_text(ctx, &pCur->delim, 1, SQLITE_TRANSIENT);
       break;
     }
-    //case LINES_READ_COLUMN_PATH: {
-    //  sqlite3_result_text(ctx, &pCur->delim, 1, SQLITE_TRANSIENT);
-    //  break;
-    //}
+    case LINES_READ_COLUMN_PATH: {
+      sqlite3_result_text(ctx, pCur->in, -1, SQLITE_TRANSIENT);
+      break;
+    }
   }
   return SQLITE_OK;
 }
@@ -226,6 +235,11 @@ static int linesFilter(
   }
   char delim = '\n';
   if(argc > 1) {
+    int nByte = sqlite3_value_bytes(argv[1]);
+    if(nByte != 1) {
+      pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Delimiter must be 1 character long, got %d characters", nByte);
+      return SQLITE_ERROR;
+    }
     const char * s = (const char * ) sqlite3_value_text(argv[1]);
     delim = s[0];
   }
@@ -236,7 +250,7 @@ static int linesFilter(
   if (pCur->fp == NULL) {
     int errnum;
     errnum = errno;
-    fprintf(stderr, "Error reading, size=%d: %s\n", nByte, strerror( errnum ));
+    pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Error reading document, size=%d: %s", nByte, strerror( errnum ));
     return SQLITE_ERROR;
   }
   size_t len = 0;
@@ -244,6 +258,7 @@ static int linesFilter(
   pCur->iRowid = 1;
   pCur->delim = delim;
   pCur->idxNum = idxNum;
+  pCur->in = "";
 
   if(pCur->idxNum == LINES_READ_INDEX_ROWID_EQ) {
     pCur->rowid_eq_yielded = 0;
@@ -270,17 +285,22 @@ static int linesReadFilter(
   }
   char delim = '\n';
   if(argc > 1) {
+    int nByte = sqlite3_value_bytes(argv[1]);
+    if(nByte != 1) {
+      pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Delimiter must be 1 character long, got %d characters", nByte);
+      return SQLITE_ERROR;
+    }
     const char * s = (const char * ) sqlite3_value_text(argv[1]);
     delim = s[0];
   }
-  const char * path = (const char * ) sqlite3_value_text(argv[0]);
+  char * path = (char * ) sqlite3_value_text(argv[0]);
 
   int errnum;
   pCur->fp = fopen(path, "r");
   if (pCur->fp == NULL) {
     int errnum;
     errnum = errno;
-    fprintf(stderr, "Error opening file at %s: %s\n", path, strerror( errnum ));
+    pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Error reading %s: %s", path, strerror( errnum ));
     return SQLITE_ERROR;
   }
 
@@ -289,6 +309,8 @@ static int linesReadFilter(
   pCur->iRowid = 1;
   pCur->delim = delim;
   pCur->idxNum = idxNum;
+  // TODO should we free this later?
+  pCur->in = (char *) path;
 
   if(pCur->idxNum == LINES_READ_INDEX_ROWID_EQ) {
     pCur->rowid_eq_yielded = 0;
@@ -424,7 +446,7 @@ static sqlite3_module linesModule = {
 static sqlite3_module linesReadModule = {
   0,                         /* iVersion */
   0,                         /* xCreate */
-  linesConnect,              /* xConnect */
+  linesReadConnect,              /* xConnect */
   linesBestIndex,            /* xBestIndex */
   linesDisconnect,           /* xDisconnect */
   0,                         /* xDestroy */

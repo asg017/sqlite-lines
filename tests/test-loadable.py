@@ -24,7 +24,9 @@ def connect():
 db = connect()
 
 def execute_all(sql, args=None):
-  return list(map(lambda x: dict(x), db.execute(sql, args).fetchall()))
+  if args is None: args = []
+  results = db.execute(sql, args).fetchall()
+  return list(map(lambda x: dict(x), results))
 
 class TestLines(unittest.TestCase):
   def test_funcs(self):
@@ -41,27 +43,30 @@ class TestLines(unittest.TestCase):
     ])
   def test_lines_version(self):
     v, = db.execute("select lines_version()").fetchone()
-    self.assertEqual(v, "v0.0.-1")
+    self.assertEqual(v, "v0.0.-7")
 
   def test_lines_debug(self):
     debug, = db.execute("select lines_debug()").fetchone()
-    self.assertEqual(debug.split('\n')[0], "Version: v0.0.-1")
+    self.assertEqual(debug.split('\n')[0], "Version: v0.0.-7")
     self.assertTrue(debug.split('\n')[1].startswith("Date: "))
   def test_lines(self):
-    # TODO document should be non-null
     self.assertEqual(execute_all("select rowid, delimiter, document, line from lines(?)", ["a\nb"]), [
-      {"rowid": 1, "delimiter": "\n", "document": None, "line": "a"},
-      {"rowid": 2, "delimiter": "\n", "document": None, "line": "b"},
+      {"rowid": 1, "delimiter": "\n", "document": "", "line": "a"},
+      {"rowid": 2, "delimiter": "\n", "document": "", "line": "b"},
     ])
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'Delimiter must be 1 character long, got 2 characters'):
+      self.assertEqual(execute_all("select line from lines('axxb', 'xx')"), [])
 
   def test_lines_read(self):
-    d = db.execute("select rowid, line from lines_read(?)", ['test_files/test.txt']).fetchall()
+    d = db.execute("select rowid, path, delimiter, line from lines_read(?)", ['test_files/test.txt']).fetchall()
     self.assertEqual(len(d), 3) 
     self.assertEqual(list(map(lambda x: dict(x), d)), [
-      {"rowid": 1, "line": "line1"},
-      {"rowid": 2, "line": "line numba 2"},
-      {"rowid": 3, "line": "line 3 baby"},
+      {"rowid": 1, "path": "test_files/test.txt", "delimiter": "\n", "line": "line1"},
+      {"rowid": 2, "path": "test_files/test.txt", "delimiter": "\n", "line": "line numba 2"},
+      {"rowid": 3, "path": "test_files/test.txt", "delimiter": "\n", "line": "line 3 baby"},
     ])
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'Error reading notexist.txt: No such file or directory'):
+      self.assertEqual(execute_all("select line from lines_read('notexist.txt')"))
   
   def test_lines_read_crlf(self):
     d = db.execute("select rowid, line from lines_read(?)", ['test_files/crlf.txt']).fetchall()
@@ -115,8 +120,8 @@ class TestLines(unittest.TestCase):
       )
     
     # TODO should be caught and thrown as OperationalError at sqlite_lines-level (with sqlite3_limit) and not sqlite-level
-    with self.assertRaisesRegex(sqlite3.DataError, 'string or blob too big'):
-      db.execute("select length(line) from lines_read('test_files/big-line-line.txt');").fetchall()
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'line 1 has a size of 1001000000 bytes, but SQLITE_LIMIT_LENGTH is 1000000000'):
+      execute_all("select length(line) from lines_read('test_files/big-line-line.txt');")
   
 if __name__ == '__main__':
     unittest.main()

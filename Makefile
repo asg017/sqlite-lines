@@ -96,13 +96,13 @@ test-watch:
 	watchexec -w lines.c -w tests/ -w tests/ --clear make test
 
 test-watch-loadable: $(TARGET_LOADABLE)
-	watchexec -w $(TARGET_LOADABLE) -w tests/test-loadable.py -- make test-loadable
+	watchexec -w lines.c -w $(TARGET_LOADABLE) -w tests/test-loadable.py --clear -- make test-loadable
 
 test-watch-cli: $(TARGET_CLI) tests/test-cli.py
 	watchexec -w cli.c -w dist/sqlite-lines -w tests/test-cli.py --clear -- make test-cli
 
 test-watch-sqlite3: $(TARAGET_SQLITE3)
-	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py -- make test-sqlite3
+	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py --clear -- make test-sqlite3
 
 .PHONY: all clean \
 	test test-watch test-watch-loadable test-watch-cli test-watch-sqlite3\
