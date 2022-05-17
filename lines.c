@@ -187,10 +187,10 @@ static int linesColumn(
       sqlite3_result_text(ctx, &pCur->delim, 1, SQLITE_TRANSIENT);
       break;
     }
-    case LINES_READ_COLUMN_PATH: {
-      sqlite3_result_text(ctx, &pCur->delim, 1, SQLITE_TRANSIENT);
-      break;
-    }
+    //case LINES_READ_COLUMN_PATH: {
+    //  sqlite3_result_text(ctx, &pCur->delim, 1, SQLITE_TRANSIENT);
+    //  break;
+    //}
   }
   return SQLITE_OK;
 }

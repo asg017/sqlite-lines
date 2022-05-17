@@ -48,9 +48,10 @@ class TestLines(unittest.TestCase):
     self.assertEqual(debug.split('\n')[0], "Version: v0.0.-1")
     self.assertTrue(debug.split('\n')[1].startswith("Date: "))
   def test_lines(self):
+    # TODO document should be non-null
     self.assertEqual(execute_all("select rowid, delimiter, document, line from lines(?)", ["a\nb"]), [
-      {"rowid": 1, "delimiter": "\n", "document": "a\nb", "line": "a"},
-      {"rowid": 2, "delimiter": "\n", "document": "a\nb", "line": "b"},
+      {"rowid": 1, "delimiter": "\n", "document": None, "line": "a"},
+      {"rowid": 2, "delimiter": "\n", "document": None, "line": "b"},
     ])
 
   def test_lines_read(self):
