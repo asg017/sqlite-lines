@@ -37,7 +37,7 @@ jobs:
           path: dist
   release:
     name: "releases"
-    if: ${{ github.event_name == 'release' }}
+    #if: ${{ github.event_name == 'release' }}
     needs: [build-macos, build-linux]
     permissions:
       contents: write
