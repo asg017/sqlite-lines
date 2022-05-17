@@ -12,9 +12,13 @@ module.exports = async ({ github, context }) => {
     tag: process.env.GITHUB_REF.replace("refs/tags/", ""),
   });*/
   //console.log("Release:", { release });
-  for (let file of await fs.readdir(".")) {
+  for (let file of await fs.readdir("lines0-linux-amd64")) {
     console.log(file);
-    /*console.log("Uploading", file);
+  }
+  for (let file of await fs.readdir("lines0-darwin-amd64")) {
+    console.log(file);
+  }
+  /*console.log("Uploading", file);
     await github.rest.repos.uploadReleaseAsset({
       owner,
       repo,
@@ -22,6 +26,5 @@ module.exports = async ({ github, context }) => {
       name: file,
       data: await fs.readFile(file),
     });*/
-  }
   return;
 };
