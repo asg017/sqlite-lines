@@ -17,7 +17,7 @@ jobs:
           ENV: CI
         run: |
           mkdir -p dist/
-          make dist/package.zip
+          make -j 4 dist/package.zip
           make test
       - name: Upload dist as artifact
         uses: actions/upload-artifact@v2
@@ -34,7 +34,7 @@ jobs:
           ENV: CI
         run: |
           mkdir -p dist/
-          make dist/package.zip
+          make -j 4 dist/package.zip
           make test
       - name: Upload dist as artifact
         uses: actions/upload-artifact@v2
