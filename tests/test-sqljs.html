@@ -56,19 +56,22 @@
           </div>`);
       }
       printResults(
-        "select name from pragma_function_list where name like 'lines%'"
+        `select name 
+from pragma_function_list 
+where name like 'lines%'`
       );
       printResults(
-        "select name from pragma_module_list where name like 'lines%'"
+        `select name 
+from pragma_module_list 
+where name like 'lines%'`
       );
-      printResults("select 1+1, lines_version(), lines_debug()");
+      printResults("select lines_version(), lines_debug()");
 
       printResults(
-        `select rowid, line from lines('a
-b
-c
-d
-e')`
+        `select 
+  rowid, 
+  line 
+from lines('a|b|c|d|e', '|')`
       );
       document.querySelector("#results").innerText = "✅ tests passed";
     });

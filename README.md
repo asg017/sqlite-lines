@@ -2,19 +2,6 @@
 
 Query individual lines from blobs or files from SQLite.
 
-```
-lines0.dylib
-lines0.so
-lines0-darwin-sqlite-lines
-lines0-linux-amd64-sqlite-lines
-lines0-darwin-sqlite3
-lines0-linux-amd64-sqlite3
-lines0-darwin-amd64.zip
-lines0-linux-amd64.zip
-lines0-sqljs.js
-lines0-sqljs.wasm
-```
-
 ## Installing
 
 ### As a loadable extension
@@ -31,9 +18,7 @@ dd if=/dev/zero of=test_files/big-line-line.txt bs=1000000 count=1001
 
 ## TODO
 
-- [ ] rowid start at 1
 - [ ] brazil geojson.nl example
-- [ ] count ndjson
 - [ ] `sqlite3_limit` check on large lines
 - [ ] check that delim is 1 char long
 - [ ] handle `SQLITE_INDEX_CONSTRAINT_GT` etc. on rowid

@@ -1,5 +1,5 @@
 COMMIT=$(shell git rev-parse HEAD)
-VERSION=v0.0.-1
+VERSION=v0.0.-7
 DATE=$(shell date +'%FT%TZ%z')
 
 LOADABLE_CFLAGS=-fPIC -shared
@@ -89,6 +89,9 @@ test-sqlite3: $(TARAGET_SQLITE3)
 test-loadable: $(TARGET_LOADABLE)
 	python3 tests/test-loadable.py
 
+test-sqljs: $(TARGET_SQLJS)
+	file_server & open http://localhost:4507/tests/test-sqljs.html
+
 test-watch:
 	watchexec -w lines.c -w tests/ -w tests/ --clear make test
 
@@ -103,8 +106,10 @@ test-watch-sqlite3: $(TARAGET_SQLITE3)
 
 .PHONY: all clean \
 	test test-watch test-watch-loadable test-watch-cli test-watch-sqlite3\
-	test-loadable test-cli test-sqlite3 \
+	test-loadable test-cli test-sqlite3 test-sqljs \
 	loadable cli sqlite3 wasm
+
+# The below is mostly borrowed from https://github.com/sql-js/sql.js/blob/master/Makefile
 
 # WASM has no (easy) filesystem for the demo, so disable lines_read
 SQLJS_CFLAGS = \
