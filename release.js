@@ -51,6 +51,8 @@ module.exports = async ({ github, context }) => {
       "lines0-darwin-amd64.zip",
       "lines0-darwin-amd64/package.zip"
     ),
+    uploadReleaseAsset("lines0-sqljs.wasm", "lines0-sqljs.wasm"),
+    uploadReleaseAsset("lines0-sqljs.js", "lines0-sqljs.js"),
   ]);
 
   return;

@@ -41,10 +41,30 @@ jobs:
         with:
           name: lines0-linux-amd64
           path: dist
+  build-sqljs:
+    name: Build for SQL.JS/WASM
+    steps:
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v11
+        with:
+          version: 1.38.40
+          actions-cache-folder: "emsdk-cache"
+      - uses: actions/checkout@v2
+        run: |
+          mkdir -p dist/
+          make -j 4 wasm
+      - uses: actions/upload-artifact@v2
+        with:
+          name: lines0-sqljs.js
+          path: dist/sqljs.js
+      - uses: actions/upload-artifact@v2
+        with:
+          name: lines0-sqljs.wasm
+          path: dist/sqljs.wasm
   release:
     name: "releases"
     if: ${{ github.event_name == 'release' }}
-    needs: [build-macos, build-linux]
+    needs: [build-macos, build-linux, build-sqljs]
     permissions:
       contents: write
     runs-on: ubuntu-latest
