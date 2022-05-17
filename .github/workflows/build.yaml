@@ -45,6 +45,7 @@ jobs:
     name: Build for SQL.JS/WASM
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v11
         with:
@@ -52,7 +53,6 @@ jobs:
           actions-cache-folder: "emsdk-cache"
       - name: Verify
         run: emcc -v
-      - uses: actions/checkout@v2
       - run: |
           mkdir -p dist/
           make -j 4 wasm
