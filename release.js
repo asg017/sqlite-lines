@@ -5,6 +5,7 @@ module.exports = async ({ github, context }) => {
     repo: { owner, repo },
     sha,
   } = context;
+  console.log(process.env.GITHUB_REF);
   const release = await github.rest.repos.getReleaseByTag({
     owner,
     repo,
