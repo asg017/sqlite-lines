@@ -43,6 +43,7 @@ jobs:
           path: dist
   build-sqljs:
     name: Build for SQL.JS/WASM
+    runs-on: ubuntu-latest
     steps:
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v11
