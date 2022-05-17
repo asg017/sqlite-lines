@@ -143,9 +143,9 @@ SQLJS_EMFLAGS_DEBUG = \
 	-s ASSERTIONS=1 \
 	-O1
 
-$(TARGET_SQLJS): $(shell find wasm/ -type f) lines.c sqlite3-extra.c
+$(TARGET_SQLJS): $(shell find wasm/ -type f) lines.c dist/sqlite3-extra.c
 	emcc $(SQLJS_CFLAGS) $(SQLJS_EMFLAGS) $(SQLJS_EMFLAGS_DEBUG) $(SQLJS_EMFLAGS_WASM) \
-		-I./sqlite -I./ lines.c sqlite3-extra.c \
+		-I./sqlite -I./ lines.c dist/sqlite3-extra.c \
 		--pre-js wasm/api.js \
 		-o $(TARGET_SQLJS_JS)
 	mv $(TARGET_SQLJS_JS) tmp.js
