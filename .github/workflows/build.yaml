@@ -50,7 +50,7 @@ jobs:
           version: 1.38.40
           actions-cache-folder: "emsdk-cache"
       - uses: actions/checkout@v2
-        run: |
+      - run: |
           mkdir -p dist/
           make -j 4 wasm
       - uses: actions/upload-artifact@v2
