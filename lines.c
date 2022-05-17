@@ -8,6 +8,7 @@ SQLITE_EXTENSION_INIT1
 #include <string.h>
 #include <errno.h>
 
+// TODO is this deterministic?
 static void linesVersionFunc(
   sqlite3_context *context,
   int argc,
@@ -16,17 +17,25 @@ static void linesVersionFunc(
   sqlite3_result_text(context, SQLITE_LINES_VERSION, -1, SQLITE_STATIC);           
 }
 
+// TODO is this deterministic?
 static void linesDebugFunc(
   sqlite3_context *context,
   int argc,
   sqlite3_value **arg
 ) {
-  const char * debug = sqlite3_mprintf("Version: %s\nDate: %s", SQLITE_LINES_VERSION, SQLITE_LINES_DATE);
+  const char * debug = sqlite3_mprintf(
+#ifdef SQLITE_LINES_DISABLE_FILESYSTEM
+    "Version: %s\nDate: %s\nSource: %s\nNO FILESYSTEM",   
+#else
+    "Version: %s\nDate: %s\nSource: %s", 
+#endif
+  SQLITE_LINES_VERSION, SQLITE_LINES_DATE, SQLITE_LINES_SOURCE
+  );
   if(debug == NULL) {
     sqlite3_result_error_nomem(context);
     return;
   }
-  sqlite3_result_text(context, debug, (int) strlen(debug), SQLITE_TRANSIENT);
+  sqlite3_result_text(context, debug, -1, SQLITE_TRANSIENT);
   sqlite3_free((void *) debug);
 }
 
@@ -41,8 +50,21 @@ struct lines_cursor {
   char delim;
   int idxNum;
   int rowid_eq_yielded;
+  // either the path to the file being read (lines_read()), 
+  // or the contents of the "document" (lines())
+  char *in;
   sqlite3_int64 iRowid;      /* The rowid */
 };
+
+#define LINES_READ_COLUMN_ROWID          -1
+#define LINES_READ_COLUMN_LINE            0
+#define LINES_READ_COLUMN_PATH            1
+#define LINES_READ_COLUMN_DELIM           2
+
+
+#define LINES_READ_INDEX_FULL     1
+#define LINES_READ_INDEX_ROWID_EQ 2
+
 
 /*
 ** The linesReadConnect() method is invoked to create a new
@@ -66,24 +88,13 @@ static int linesConnect(
 ){
   sqlite3_vtab *pNew;
   int rc;
-
-/* Column numbers */
-#define LINES_READ_COLUMN_ROWID          -1
-#define LINES_READ_COLUMN_CONTENTS        0
-#define LINES_READ_COLUMN_PATH            1
-#define LINES_READ_COLUMN_DELIM           2
-
-
-#define LINES_READ_INDEX_FULL     1
-#define LINES_READ_INDEX_ROWID_EQ 2
-
   (void)pUnused;
   (void)argcUnused;
   (void)argvUnused;
   (void)pzErrUnused;
   rc = sqlite3_declare_vtab(db,
-     "CREATE TABLE x(contents text,"
-     "path hidden, delim hidden)");
+     "CREATE TABLE x(line text,"
+     "document hidden, delimiter hidden)");
   if( rc==SQLITE_OK ){ 
     pNew = *ppVtab = sqlite3_malloc( sizeof(*pNew) );
     if( pNew==0 ) return SQLITE_NOMEM;
@@ -162,7 +173,7 @@ static int linesColumn(
   lines_cursor *pCur = (lines_cursor*)cur;
   sqlite3_int64 x = 0;
   switch( i ){
-    case LINES_READ_COLUMN_CONTENTS: {
+    case LINES_READ_COLUMN_LINE: {
       int trim = 0;
       if(pCur->curLineLength > 0 && pCur->curLineContents[pCur->curLineLength-1] == pCur->delim) {
         if(pCur->curLineLength > 1 && pCur->curLineContents[pCur->curLineLength-2] == '\r') trim = 2;
@@ -170,6 +181,14 @@ static int linesColumn(
       }
 
       sqlite3_result_text(ctx, pCur->curLineContents, pCur->curLineLength-trim, SQLITE_TRANSIENT);
+      break;
+    }
+    case LINES_READ_COLUMN_DELIM: {
+      sqlite3_result_text(ctx, &pCur->delim, 1, SQLITE_TRANSIENT);
+      break;
+    }
+    case LINES_READ_COLUMN_PATH: {
+      sqlite3_result_text(ctx, &pCur->delim, 1, SQLITE_TRANSIENT);
       break;
     }
   }
@@ -222,7 +241,7 @@ static int linesFilter(
   }
   size_t len = 0;
   pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
-  pCur->iRowid = 0;
+  pCur->iRowid = 1;
   pCur->delim = delim;
   pCur->idxNum = idxNum;
 
@@ -267,7 +286,7 @@ static int linesReadFilter(
 
   size_t len = 0;
   pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
-  pCur->iRowid = 0;
+  pCur->iRowid = 1;
   pCur->delim = delim;
   pCur->idxNum = idxNum;
 
@@ -281,6 +300,32 @@ static int linesReadFilter(
     }
   }
   return SQLITE_OK;
+}
+
+static int linesReadConnect(
+  sqlite3 *db,
+  void *pUnused,
+  int argcUnused, const char *const*argvUnused,
+  sqlite3_vtab **ppVtab,
+  char **pzErrUnused
+){
+  sqlite3_vtab *pNew;
+  int rc;
+  (void)pUnused;
+  (void)argcUnused;
+  (void)argvUnused;
+  (void)pzErrUnused;
+  // only difference is schema, uses "path" instead of "document"
+  rc = sqlite3_declare_vtab(db,
+     "CREATE TABLE x(line text,"
+     "path hidden, delimiter hidden)");
+  if( rc==SQLITE_OK ){ 
+    pNew = *ppVtab = sqlite3_malloc( sizeof(*pNew) );
+    if( pNew==0 ) return SQLITE_NOMEM;
+    memset(pNew, 0, sizeof(*pNew));
+    sqlite3_vtab_config(db, SQLITE_VTAB_INNOCUOUS);
+  }
+  return rc;
 }
 #endif
 

@@ -23,6 +23,9 @@ def connect():
 
 db = connect()
 
+def execute_all(sql, args=None):
+  return list(map(lambda x: dict(x), db.execute(sql, args).fetchall()))
+
 class TestLines(unittest.TestCase):
   def test_funcs(self):
     funcs = list(map(lambda a: a[0], db.execute("select name from loaded_functions").fetchall()))
@@ -44,34 +47,39 @@ class TestLines(unittest.TestCase):
     debug, = db.execute("select lines_debug()").fetchone()
     self.assertEqual(debug.split('\n')[0], "Version: v0.0.-1")
     self.assertTrue(debug.split('\n')[1].startswith("Date: "))
+  def test_lines(self):
+    self.assertEqual(execute_all("select rowid, delimiter, document, line from lines(?)", ["a\nb"]), [
+      {"rowid": 1, "delimiter": "\n", "document": "a\nb", "line": "a"},
+      {"rowid": 2, "delimiter": "\n", "document": "a\nb", "line": "b"},
+    ])
 
   def test_lines_read(self):
-    d = db.execute("select rowid, contents from lines_read(?)", ['test_files/test.txt']).fetchall()
+    d = db.execute("select rowid, line from lines_read(?)", ['test_files/test.txt']).fetchall()
     self.assertEqual(len(d), 3) 
     self.assertEqual(list(map(lambda x: dict(x), d)), [
-      {"rowid": 0, "contents": "line1"},
-      {"rowid": 1, "contents": "line numba 2"},
-      {"rowid": 2, "contents": "line 3 baby"},
+      {"rowid": 1, "line": "line1"},
+      {"rowid": 2, "line": "line numba 2"},
+      {"rowid": 3, "line": "line 3 baby"},
     ])
   
   def test_lines_read_crlf(self):
-    d = db.execute("select rowid, contents from lines_read(?)", ['test_files/crlf.txt']).fetchall()
+    d = db.execute("select rowid, line from lines_read(?)", ['test_files/crlf.txt']).fetchall()
     self.assertEqual(len(d), 3) 
     self.assertEqual(list(map(lambda x: dict(x), d)), [
-      {"rowid": 0, "contents": "aaa"},
-      {"rowid": 1, "contents": "bbb"},
-      {"rowid": 2, "contents": "ccc"},
+      {"rowid": 1, "line": "aaa"},
+      {"rowid": 2, "line": "bbb"},
+      {"rowid": 3, "line": "ccc"},
     ])
 
   def test_lines_read_delim(self):
-    d = db.execute("select rowid, contents from lines_read(?, ?);", ['test_files/pipe.txt', '|']).fetchall()
+    d = db.execute("select rowid, line from lines_read(?, ?);", ['test_files/pipe.txt', '|']).fetchall()
     self.assertEqual(len(d), 5) 
     self.assertEqual(list(map(lambda x: dict(x), d)), [
-      {"rowid": 0, "contents": "a"},
-      {"rowid": 1, "contents": "b"},
-      {"rowid": 2, "contents": "c"},
-      {"rowid": 3, "contents": "d"},
-      {"rowid": 4, "contents": "yo"},
+      {"rowid": 1, "line": "a"},
+      {"rowid": 2, "line": "b"},
+      {"rowid": 3, "line": "c"},
+      {"rowid": 4, "line": "d"},
+      {"rowid": 5, "line": "yo"},
     ])
   
   def test_lines_read_big(self):
@@ -85,14 +93,14 @@ class TestLines(unittest.TestCase):
     self.assertEqual(d[0]["count"], 1000001) 
 
     s2 = time.process_time()
-    d = db.execute("select count(*), contents from lines_read(?, char(10)) where rowid = 0;", ['test_files/big.txt']).fetchall()
+    d = db.execute("select count(*), line from lines_read(?, char(10)) where rowid = 0;", ['test_files/big.txt']).fetchall()
     e2 = time.process_time()
     self.assertEqual(d[0]["count(*)"], 1) 
-    self.assertEqual(d[0]["contents"], "1") 
+    self.assertEqual(d[0]["line"], "1") 
     duration_ratio = (e2-s2) / (e1-s1)
     self.assertLess(duration_ratio, .01)
     
-    d = db.execute("explain query plan select contents from lines_read(?, char(10)) where rowid = 0;", ['test_files/big.txt']).fetchall()
+    d = db.execute("explain query plan select line from lines_read(?, char(10)) where rowid = 0;", ['test_files/big.txt']).fetchall()
     
     self.assertEqual(len(d), 1)
     self.assertEqual(d[0]["id"], 2)
@@ -107,7 +115,7 @@ class TestLines(unittest.TestCase):
     
     # TODO should be caught and thrown as OperationalError at sqlite_lines-level (with sqlite3_limit) and not sqlite-level
     with self.assertRaisesRegex(sqlite3.DataError, 'string or blob too big'):
-      db.execute("select length(contents) from lines_read('test_files/big-line-line.txt');").fetchall()
+      db.execute("select length(line) from lines_read('test_files/big-line-line.txt');").fetchall()
   
 if __name__ == '__main__':
     unittest.main()

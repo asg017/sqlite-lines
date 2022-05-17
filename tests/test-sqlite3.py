@@ -29,8 +29,8 @@ class TestSqliteLinesCli(unittest.TestCase):
       "lines_read\n"
     )
     self.assertEqual(
-      run_sqlite3(['select rowid, contents from lines_read("test_files/test.txt")']).stdout,  
-      "0|line1\n1|line numba 2\n2|line 3 baby\n"
+      run_sqlite3(['select rowid, line from lines_read("test_files/test.txt")']).stdout,  
+      "1|line1\n2|line numba 2\n3|line 3 baby\n"
     )
 
 if __name__ == '__main__':
