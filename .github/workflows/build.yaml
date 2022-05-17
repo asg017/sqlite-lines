@@ -50,6 +50,8 @@ jobs:
         with:
           version: 1.38.40
           actions-cache-folder: "emsdk-cache"
+      - name: Verify
+        run: emcc -v
       - uses: actions/checkout@v2
       - run: |
           mkdir -p dist/
