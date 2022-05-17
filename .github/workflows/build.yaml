@@ -1,5 +1,11 @@
 name: "build"
-on: [push]
+on:
+  release:
+    types: [published]
+  push:
+  pull_request:
+permissions:
+  contents: read
 jobs:
   build-macos:
     name: Build for MacOS
@@ -37,7 +43,7 @@ jobs:
           path: dist
   release:
     name: "releases"
-    #if: ${{ github.event_name == 'release' }}
+    if: ${{ github.event_name == 'release' }}
     needs: [build-macos, build-linux]
     permissions:
       contents: write

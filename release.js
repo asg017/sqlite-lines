@@ -5,26 +5,52 @@ module.exports = async ({ github, context }) => {
     repo: { owner, repo },
     sha,
   } = context;
-  console.log(process.env.GITHUB_REF);
-  /*const release = await github.rest.repos.getReleaseByTag({
+  const release = await github.rest.repos.getReleaseByTag({
     owner,
     repo,
     tag: process.env.GITHUB_REF.replace("refs/tags/", ""),
-  });*/
-  //console.log("Release:", { release });
-  for (let file of await fs.readdir("lines0-linux-amd64")) {
-    console.log(file);
-  }
-  for (let file of await fs.readdir("lines0-darwin-amd64")) {
-    console.log(file);
-  }
-  /*console.log("Uploading", file);
-    await github.rest.repos.uploadReleaseAsset({
+  });
+
+  const release_id = release.data.id;
+  async function uploadReleaseAsset(name, path) {
+    console.log("Uploading", name, "at", file);
+
+    return github.rest.repos.uploadReleaseAsset({
       owner,
       repo,
-      release_id: release.data.id,
-      name: file,
-      data: await fs.readFile(file),
-    });*/
+      release_id,
+      name,
+      data: await fs.readFile(path),
+    });
+  }
+  await Promise.all([
+    uploadReleaseAsset("lines0.so", "lines0-linux-amd64/lines0.so"),
+    uploadReleaseAsset(
+      "lines0-linux-amd64-sqlite-lines",
+      "lines0-linux-amd64/sqlite-lines"
+    ),
+    uploadReleaseAsset(
+      "lines0-linux-amd64-sqlite3",
+      "lines0-linux-amd64/sqlite3"
+    ),
+    uploadReleaseAsset(
+      "lines0-linux-amd64.zip",
+      "lines0-linux-amd64/package.zip"
+    ),
+    uploadReleaseAsset("lines0.dylib", "lines0-darwin-amd64/lines0.dylib"),
+    uploadReleaseAsset(
+      "lines0-darwin-amd64-sqlite-lines",
+      "lines0-darwin-amd64/sqlite-lines"
+    ),
+    uploadReleaseAsset(
+      "lines0-darwin-amd64-sqlite3",
+      "lines0-darwin-amd64/sqlite3"
+    ),
+    uploadReleaseAsset(
+      "lines0-darwin-amd64.zip",
+      "lines0-darwin-amd64/package.zip"
+    ),
+  ]);
+
   return;
 };
