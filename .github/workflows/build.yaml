@@ -58,11 +58,11 @@ jobs:
           make -j 4 wasm
       - uses: actions/upload-artifact@v2
         with:
-          name: lines0-sqljs.js
+          name: lines0-sqljs
           path: dist/sqljs.js
       - uses: actions/upload-artifact@v2
         with:
-          name: lines0-sqljs.wasm
+          name: lines0-sqljs
           path: dist/sqljs.wasm
   release:
     name: "releases"
