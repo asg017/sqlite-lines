@@ -61,11 +61,12 @@ struct lines_cursor {
 #define LINES_READ_COLUMN_PATH            1
 #define LINES_READ_COLUMN_DELIM           2
 
+#define LINES_IDXNUM_FULL        1
+#define LINES_IDXNUM_ROWID_EQ    2
 
-#define LINES_READ_INDEX_FULL     1
-#define LINES_READ_INDEX_ROWID_EQ 2
-
-
+#define LINES_IDXSTR_PATH       'P'
+#define LINES_IDXSTR_DELIMITER  'D'
+#define LINES_IDXSTR_ROWID      'R'
 /*
 ** The linesReadConnect() method is invoked to create a new
 ** lines_vtab that describes the lines_read virtual table.
@@ -153,7 +154,7 @@ static int linesNext(sqlite3_vtab_cursor *cur){
 */
 static int linesEof(sqlite3_vtab_cursor *cur){
   lines_cursor *pCur = (lines_cursor*)cur;
-  if(pCur->idxNum==LINES_READ_INDEX_ROWID_EQ) {
+  if(pCur->idxNum==LINES_IDXNUM_ROWID_EQ) {
     if(pCur->rowid_eq_yielded) return 1;
     pCur->rowid_eq_yielded = 1;
     return 0;
@@ -215,6 +216,103 @@ static int linesRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid){
   return SQLITE_OK;
 }
 
+
+
+/*
+** SQLite will invoke this method one or more times while planning a query
+** that uses the lines_read virtual table.  This routine needs to create
+** a query plan for each invocation and compute an estimated cost for that
+** plan.
+*/
+/*
+  Every query plan for lines() or lines_read() will use idxNum and idxStr.
+  
+  idxNum options:
+    LINES_IDXNUM_FULL: "do a full scan", ie read all lines from file/document
+    LINES_IDXNUM_ROWID_EQ: Only read a single line, defined by a "rowid = :x" constraint
+
+  idxStr is a 3-character string that denotes which argv option cooresponds
+  to which column constraint. The i-th character in the string cooresponds
+  to the i-th argv option in the xFilter functions.
+
+  idxStr character options:
+    LINES_IDXSTR_PATH: argv[i] is text to the path of the file or the document itself
+    LINES_IDXSTR_DELIMITER: argv[i] will be text of delimiter to use
+    LINES_IDXSTR_ROWID: argv[i] is integer of rowid to filter to, with LINES_IDXNUM_ROWID_EQ
+
+*/
+
+static int linesBestIndex(
+  sqlite3_vtab *pVTab,
+  sqlite3_index_info *pIdxInfo
+){
+  int hasPath = 0;
+  int hasDelim = 0;
+  int hasRowidEq = 0;
+  int argv = 1;
+
+  pIdxInfo->idxStr = sqlite3_mprintf("000");
+  
+  if(pIdxInfo->idxStr == NULL) {
+    pVTab->zErrMsg = sqlite3_mprintf("unable to allocate memory for idxStr");
+    return SQLITE_NOMEM;
+  }
+  
+  for(int i=0; i<pIdxInfo->nConstraint; i++){
+    const struct sqlite3_index_constraint *pCons = &pIdxInfo->aConstraint[i];
+    #ifdef SQLITE_LINES_DEBUG
+    printf("i=%d iColumn=%d, op=%d, usable=%d\n", i, pCons->iColumn, pCons->op, pCons->usable);
+    #endif
+    switch(pCons->iColumn) {
+      case LINES_READ_COLUMN_ROWID: {
+        if(pCons->op==SQLITE_INDEX_CONSTRAINT_EQ && pCons->usable) {
+            hasRowidEq = 1;
+            pIdxInfo->aConstraintUsage[i].argvIndex = argv;
+            pIdxInfo->aConstraintUsage[i].omit = 1;
+            pIdxInfo->idxStr[argv-1] = LINES_IDXSTR_ROWID;
+            argv++;
+        }
+        break;
+      }
+      case LINES_READ_COLUMN_PATH: {
+        if(!hasPath && !pCons->usable || pCons->op!=SQLITE_INDEX_CONSTRAINT_EQ) return SQLITE_CONSTRAINT;
+        hasPath = 1;
+        pIdxInfo->aConstraintUsage[i].argvIndex = argv;
+        pIdxInfo->aConstraintUsage[i].omit = 1;
+        pIdxInfo->idxStr[argv-1] = LINES_IDXSTR_PATH;
+        argv++;
+        break;
+      }
+      case LINES_READ_COLUMN_DELIM: {
+        if(!pCons->usable || pCons->op!=SQLITE_INDEX_CONSTRAINT_EQ) return SQLITE_CONSTRAINT;
+        hasDelim = 1;
+        pIdxInfo->aConstraintUsage[i].argvIndex = argv;
+        pIdxInfo->aConstraintUsage[i].omit = 1;
+        pIdxInfo->idxStr[argv-1] = LINES_IDXSTR_DELIMITER;
+        argv++;
+        break;
+      }
+    }
+  }
+  if(!hasPath) {
+    pVTab->zErrMsg = sqlite3_mprintf("path argument is required");
+    return SQLITE_ERROR;
+  }
+  if(hasRowidEq) {
+    pIdxInfo->idxNum = LINES_IDXNUM_ROWID_EQ;
+    pIdxInfo->estimatedCost = (double)1;
+    pIdxInfo->estimatedRows = 1;
+    //pIdxInfo->idxFlags |= SQLITE_INDEX_SCAN_UNIQUE;
+    return SQLITE_OK;  
+  }
+  pIdxInfo->idxNum = LINES_IDXNUM_FULL;
+  pIdxInfo->needToFreeIdxStr = 1;
+  pIdxInfo->estimatedCost = (double)100000;
+  pIdxInfo->estimatedRows = 100000;
+
+  return SQLITE_OK;
+}
+
 /*
 ** This method is called to "rewind" the lines_cursor object back
 ** to the first row of output.  This method is always called at least
@@ -226,33 +324,49 @@ static int linesRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid){
 */
 static int linesFilter(
   sqlite3_vtab_cursor *pVtabCursor, 
-  int idxNum, const char *idxStrUnused,
+  int idxNum, const char *idxStr,
   int argc, sqlite3_value **argv
 ){
+  int targetRowid;
+  char delim = '\n';
   lines_cursor *pCur = (lines_cursor *)pVtabCursor;
   if(pCur->fp != NULL) {
     fclose(pCur->fp);
   }
-  char delim = '\n';
-  if(argc > 1) {
-    int nByte = sqlite3_value_bytes(argv[1]);
-    if(nByte != 1) {
-      pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Delimiter must be 1 character long, got %d characters", nByte);
-      return SQLITE_ERROR;
+  
+  for(int i = 0; i < 3; i++) {
+    switch (idxStr[i]) {
+      case LINES_IDXSTR_ROWID: {
+        targetRowid = sqlite3_value_int64(argv[i]);
+        break;
+      }
+      case LINES_IDXSTR_PATH: {
+        int nByte = sqlite3_value_bytes(argv[i]);
+        void *pData = (void *) sqlite3_value_blob(argv[i]);
+        int errnum;
+        pCur->fp = fmemopen(pData, nByte, "r");
+        if (pCur->fp == NULL) {
+          int errnum;
+          errnum = errno;
+          pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Error reading document, size=%d: %s", nByte, strerror( errnum ));
+          return SQLITE_ERROR;
+        }
+        break;
+      }
+      case LINES_IDXSTR_DELIMITER: {
+        int nByte = sqlite3_value_bytes(argv[i]);
+        if(nByte != 1) {
+          pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Delimiter must be 1 character long, got %d characters", nByte);
+          return SQLITE_ERROR;
+        }
+        const char * s = (const char * ) sqlite3_value_text(argv[i]);
+        delim = s[0];
+        break;
+      }
+
     }
-    const char * s = (const char * ) sqlite3_value_text(argv[1]);
-    delim = s[0];
   }
-  int nByte = sqlite3_value_bytes(argv[0]);
-  void *pData = (void *) sqlite3_value_blob(argv[0]);
-  int errnum;
-  pCur->fp = fmemopen(pData, nByte, "r");
-  if (pCur->fp == NULL) {
-    int errnum;
-    errnum = errno;
-    pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Error reading document, size=%d: %s", nByte, strerror( errnum ));
-    return SQLITE_ERROR;
-  }
+  
   size_t len = 0;
   pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
   pCur->iRowid = 1;
@@ -260,9 +374,8 @@ static int linesFilter(
   pCur->idxNum = idxNum;
   pCur->in = "";
 
-  if(pCur->idxNum == LINES_READ_INDEX_ROWID_EQ) {
+  if(pCur->idxNum == LINES_IDXNUM_ROWID_EQ) {
     pCur->rowid_eq_yielded = 0;
-    int targetRowid = sqlite3_value_int64(argv[2]);
     while(pCur->iRowid < targetRowid && pCur->curLineLength >= 0) {
       size_t len = 0;
   
@@ -276,32 +389,49 @@ static int linesFilter(
 #ifndef SQLITE_LINES_DISABLE_FILESYSTEM
 static int linesReadFilter(
   sqlite3_vtab_cursor *pVtabCursor, 
-  int idxNum, const char *idxStrUnused,
+  int idxNum, const char *idxStr,
   int argc, sqlite3_value **argv
 ){
+  int targetRowid;
+  char delim = '\n';
+  
   lines_cursor *pCur = (lines_cursor *)pVtabCursor;
   if(pCur->fp != NULL) {
     fclose(pCur->fp);
   }
-  char delim = '\n';
-  if(argc > 1) {
-    int nByte = sqlite3_value_bytes(argv[1]);
-    if(nByte != 1) {
-      pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Delimiter must be 1 character long, got %d characters", nByte);
-      return SQLITE_ERROR;
-    }
-    const char * s = (const char * ) sqlite3_value_text(argv[1]);
-    delim = s[0];
-  }
-  char * path = (char * ) sqlite3_value_text(argv[0]);
 
-  int errnum;
-  pCur->fp = fopen(path, "r");
-  if (pCur->fp == NULL) {
-    int errnum;
-    errnum = errno;
-    pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Error reading %s: %s", path, strerror( errnum ));
-    return SQLITE_ERROR;
+  for(int i = 0; i < 3; i++) {
+    switch (idxStr[i]) {
+      case LINES_IDXSTR_ROWID: {
+        targetRowid = sqlite3_value_int64(argv[i]);
+        break;
+      }
+      case LINES_IDXSTR_PATH: {
+        char * path = (char * ) sqlite3_value_text(argv[i]);
+        // TODO should we free this later?
+        pCur->in = (char *) path;
+
+        int errnum;
+        pCur->fp = fopen(path, "r");
+        if (pCur->fp == NULL) {
+          int errnum;
+          errnum = errno;
+          pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Error reading %s: %s", path, strerror( errnum ));
+          return SQLITE_ERROR;
+        }
+        break;
+      }
+      case LINES_IDXSTR_DELIMITER: {
+        int nByte = sqlite3_value_bytes(argv[i]);
+        if(nByte != 1) {
+          pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("Delimiter must be 1 character long, got %d characters", nByte);
+          return SQLITE_ERROR;
+        }
+        const char * s = (const char * ) sqlite3_value_text(argv[i]);
+        delim = s[0];
+        break;
+      }
+    }
   }
 
   size_t len = 0;
@@ -309,12 +439,9 @@ static int linesReadFilter(
   pCur->iRowid = 1;
   pCur->delim = delim;
   pCur->idxNum = idxNum;
-  // TODO should we free this later?
-  pCur->in = (char *) path;
 
-  if(pCur->idxNum == LINES_READ_INDEX_ROWID_EQ) {
+  if(pCur->idxNum == LINES_IDXNUM_ROWID_EQ) {
     pCur->rowid_eq_yielded = 0;
-    int targetRowid = sqlite3_value_int64(argv[2]);
     while(pCur->iRowid < targetRowid && pCur->curLineLength >= 0) {
       size_t len = 0;
       pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
@@ -350,70 +477,6 @@ static int linesReadConnect(
   return rc;
 }
 #endif
-
-/*
-** SQLite will invoke this method one or more times while planning a query
-** that uses the lines_read virtual table.  This routine needs to create
-** a query plan for each invocation and compute an estimated cost for that
-** plan.
-*/
-static int linesBestIndex(
-  sqlite3_vtab *pVTab,
-  sqlite3_index_info *pIdxInfo
-){
-  int hasPath = 0;
-  int hasDelim = 0;
-  int hasRowidEq = 0;
-  for(int i=0; i<pIdxInfo->nConstraint; i++){
-    const struct sqlite3_index_constraint *pCons = &pIdxInfo->aConstraint[i];
-    //printf("i=%d iColumn=%d, op=%d, usable=%d\n", i, pCons->iColumn, pCons->op, pCons->usable);
-    switch(pCons->iColumn) {
-      case LINES_READ_COLUMN_ROWID: {
-        // TODO also support SQLITE_INDEX_CONSTRAINT_GT, SQLITE_INDEX_CONSTRAINT_LE, SQLITE_INDEX_CONSTRAINT_LIMIT, SQLITE_INDEX_CONSTRAINT_OFFSET
-        // have new HEAD/TAIL idxNum when one of GT OR LT is given
-        if(pCons->op==SQLITE_INDEX_CONSTRAINT_EQ && pCons->usable) {
-            hasRowidEq = 1;
-            // TODO this assumes a LINES_READ_COLUMN_DELIM constraint was given
-            pIdxInfo->aConstraintUsage[i].argvIndex = 3;
-            pIdxInfo->aConstraintUsage[i].omit = 1;
-        }
-        break;
-      }
-      case LINES_READ_COLUMN_PATH: {
-        // TODO assert this is SQLITE_INDEX_CONSTRAINT_EQ, can't otherwise
-        if(!pCons->usable) return SQLITE_CONSTRAINT;
-        hasPath = 1;
-        pIdxInfo->aConstraintUsage[i].argvIndex = 1;
-        pIdxInfo->aConstraintUsage[i].omit = 1;
-        break;
-      }
-      case LINES_READ_COLUMN_DELIM: {
-        // TODO assert this is SQLITE_INDEX_CONSTRAINT_EQ, can't otherwise
-        if(!pCons->usable) return SQLITE_CONSTRAINT;
-        hasDelim = 1;
-        pIdxInfo->aConstraintUsage[i].argvIndex = 2;
-        pIdxInfo->aConstraintUsage[i].omit = 1;
-        break;
-      }
-    }
-  }
-  if(!hasPath) {
-    pVTab->zErrMsg = sqlite3_mprintf("path argument is required");
-    return SQLITE_ERROR;
-  }
-  if(hasRowidEq) {
-    pIdxInfo->idxNum = LINES_READ_INDEX_ROWID_EQ;
-    pIdxInfo->estimatedCost = (double)1;
-    pIdxInfo->estimatedRows = 1;
-    //pIdxInfo->idxFlags |= SQLITE_INDEX_SCAN_UNIQUE;
-    return SQLITE_OK;  
-  }
-  pIdxInfo->idxNum = LINES_READ_INDEX_FULL;
-  pIdxInfo->estimatedCost = (double)100000;
-  pIdxInfo->estimatedRows = 100000;
-
-  return SQLITE_OK;
-}
 
 static sqlite3_module linesModule = {
   0,                         /* iVersion */

@@ -58,9 +58,7 @@ class TestLines(unittest.TestCase):
       self.assertEqual(execute_all("select line from lines('axxb', 'xx')"), [])
 
   def test_lines_read(self):
-    d = db.execute("select rowid, path, delimiter, line from lines_read(?)", ['test_files/test.txt']).fetchall()
-    self.assertEqual(len(d), 3) 
-    self.assertEqual(list(map(lambda x: dict(x), d)), [
+    self.assertEqual(execute_all("select rowid, path, delimiter, line from lines_read(?)", ['test_files/test.txt']), [
       {"rowid": 1, "path": "test_files/test.txt", "delimiter": "\n", "line": "line1"},
       {"rowid": 2, "path": "test_files/test.txt", "delimiter": "\n", "line": "line numba 2"},
       {"rowid": 3, "path": "test_files/test.txt", "delimiter": "\n", "line": "line 3 baby"},
@@ -69,18 +67,14 @@ class TestLines(unittest.TestCase):
       self.assertEqual(execute_all("select line from lines_read('notexist.txt')"))
   
   def test_lines_read_crlf(self):
-    d = db.execute("select rowid, line from lines_read(?)", ['test_files/crlf.txt']).fetchall()
-    self.assertEqual(len(d), 3) 
-    self.assertEqual(list(map(lambda x: dict(x), d)), [
+    self.assertEqual(execute_all("select rowid, line from lines_read(?)", ['test_files/crlf.txt']), [
       {"rowid": 1, "line": "aaa"},
       {"rowid": 2, "line": "bbb"},
       {"rowid": 3, "line": "ccc"},
     ])
 
   def test_lines_read_delim(self):
-    d = db.execute("select rowid, line from lines_read(?, ?);", ['test_files/pipe.txt', '|']).fetchall()
-    self.assertEqual(len(d), 5) 
-    self.assertEqual(list(map(lambda x: dict(x), d)), [
+    self.assertEqual(execute_all("select rowid, line from lines_read(?, ?);", ['test_files/pipe.txt', '|']), [
       {"rowid": 1, "line": "a"},
       {"rowid": 2, "line": "b"},
       {"rowid": 3, "line": "c"},
@@ -99,29 +93,99 @@ class TestLines(unittest.TestCase):
     self.assertEqual(d[0]["count"], 1000001) 
 
     s2 = time.process_time()
-    d = db.execute("select count(*), line from lines_read(?, char(10)) where rowid = 0;", ['test_files/big.txt']).fetchall()
+    d = db.execute("select count(*), line from lines_read(?) where rowid = 0;", ['test_files/big.txt']).fetchall()
     e2 = time.process_time()
     self.assertEqual(d[0]["count(*)"], 1) 
     self.assertEqual(d[0]["line"], "1") 
     duration_ratio = (e2-s2) / (e1-s1)
     self.assertLess(duration_ratio, .01)
     
-    d = db.execute("explain query plan select line from lines_read(?, char(10)) where rowid = 0;", ['test_files/big.txt']).fetchall()
-    
-    self.assertEqual(len(d), 1)
-    self.assertEqual(d[0]["id"], 2)
-    self.assertEqual(d[0]["parent"], 0)
-    self.assertEqual(d[0]["notused"], 0)
-    self.assertEqual(d[0]["detail"], "SCAN lines_read VIRTUAL TABLE INDEX 2:")
-    
   def test_lines_read_big_1line(self):
     if os.environ.get('ENV') == "CI":
       self.skipTest("Skipping large file testing on CI environments"
       )
     
-    # TODO should be caught and thrown as OperationalError at sqlite_lines-level (with sqlite3_limit) and not sqlite-level
     with self.assertRaisesRegex(sqlite3.OperationalError, 'line 1 has a size of 1001000000 bytes, but SQLITE_LIMIT_LENGTH is 1000000000'):
       execute_all("select length(line) from lines_read('test_files/big-line-line.txt');")
   
+  def test_lines_query_plan(self):
+    self.assertEqual(
+      execute_all("explain query plan select line from lines('') where rowid = 0;"),
+      [{
+        "id": 2,
+        "parent": 0,
+        "notused": 0,
+        "detail": "SCAN lines VIRTUAL TABLE INDEX 2:RP0"
+      }]
+    )
+    self.assertEqual(
+      execute_all("explain query plan select line from lines('', 'a') where rowid = 0;"),
+      [{
+        "id": 2,
+        "parent": 0,
+        "notused": 0,
+        "detail": "SCAN lines VIRTUAL TABLE INDEX 2:RPD"
+      }]
+    )
+    self.assertEqual(
+      execute_all("explain query plan select line from lines('')"),
+      [{
+        "id": 2,
+        "parent": 0,
+        "notused": 0,
+        "detail": "SCAN lines VIRTUAL TABLE INDEX 1:P00"
+      }]
+    )
+    # TODO should be "document" for lines()
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'path argument is required'):
+      self.assertEqual(
+        execute_all("explain query plan select line from lines_read"),
+        [{
+          "id": 2,
+          "parent": 0,
+          "notused": 0,
+          "detail": "SCAN lines_read VIRTUAL TABLE INDEX 1:P00"
+        }]
+      )
+  
+  def test_lines_read_query_plan(self):
+    self.assertEqual(
+      execute_all("explain query plan select line from lines_read('') where rowid = 0;"),
+      [{
+        "id": 2,
+        "parent": 0,
+        "notused": 0,
+        "detail": "SCAN lines_read VIRTUAL TABLE INDEX 2:RP0"
+      }]
+    )
+    self.assertEqual(
+      execute_all("explain query plan select line from lines_read('', 'a') where rowid = 0;"),
+      [{
+        "id": 2,
+        "parent": 0,
+        "notused": 0,
+        "detail": "SCAN lines_read VIRTUAL TABLE INDEX 2:RPD"
+      }]
+    )
+    self.assertEqual(
+      execute_all("explain query plan select line from lines_read('')"),
+      [{
+        "id": 2,
+        "parent": 0,
+        "notused": 0,
+        "detail": "SCAN lines_read VIRTUAL TABLE INDEX 1:P00"
+      }]
+    )
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'path argument is required'):
+      self.assertEqual(
+        execute_all("explain query plan select line from lines_read"),
+        [{
+          "id": 2,
+          "parent": 0,
+          "notused": 0,
+          "detail": "SCAN lines_read VIRTUAL TABLE INDEX 1:P00"
+        }]
+      )
+      
 if __name__ == '__main__':
     unittest.main()

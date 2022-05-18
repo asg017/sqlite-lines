@@ -33,5 +33,15 @@ class TestSqliteLinesCli(unittest.TestCase):
       "1|line1\n2|line numba 2\n3|line 3 baby\n"
     )
 
+    self.assertEqual(
+      run_sqlite3(["""
+        select name, line 
+        from fsdir("test_files") 
+        join lines_read(name) as lines
+        where name like 'test_files/x%' and  lines.rowid = 1;
+      """]).stdout,  
+      "test_files/x2.txt|x2!\ntest_files/x1.txt|x1!\n"
+    )
+
 if __name__ == '__main__':
     unittest.main()

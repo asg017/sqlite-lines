@@ -83,7 +83,7 @@ test:
 test-cli: $(TARGET_CLI)
 	python3 tests/test-cli.py
 
-test-sqlite3: $(TARAGET_SQLITE3)
+test-sqlite3: $(TARGET_SQLITE3)
 	python3 tests/test-sqlite3.py
 
 test-loadable: $(TARGET_LOADABLE)
@@ -95,17 +95,17 @@ test-sqljs: $(TARGET_SQLJS)
 test-watch:
 	watchexec -w lines.c -w tests/ -w tests/ --clear make test
 
-test-watch-loadable: $(TARGET_LOADABLE)
+test-loadable-watch: $(TARGET_LOADABLE)
 	watchexec -w lines.c -w $(TARGET_LOADABLE) -w tests/test-loadable.py --clear -- make test-loadable
 
-test-watch-cli: $(TARGET_CLI) tests/test-cli.py
+test-cli-watch: $(TARGET_CLI) tests/test-cli.py
 	watchexec -w cli.c -w dist/sqlite-lines -w tests/test-cli.py --clear -- make test-cli
 
-test-watch-sqlite3: $(TARAGET_SQLITE3)
+test-sqlite3-watch: $(TARAGET_SQLITE3)
 	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py --clear -- make test-sqlite3
 
 .PHONY: all clean \
-	test test-watch test-watch-loadable test-watch-cli test-watch-sqlite3\
+	test test-watch test-loadable-watch test-cli-watch test-sqlite3-watch \
 	test-loadable test-cli test-sqlite3 test-sqljs \
 	loadable cli sqlite3 wasm
 
