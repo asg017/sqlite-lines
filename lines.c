@@ -131,6 +131,7 @@ static int linesOpen(sqlite3_vtab *pUnused, sqlite3_vtab_cursor **ppCursor){
 */
 static int linesClose(sqlite3_vtab_cursor *cur){
   lines_cursor *pCur = (lines_cursor*)cur;
+  if(pCur->curLineContents != NULL) free(pCur->curLineContents);
   if(pCur->fp != NULL) fclose(pCur->fp);
   sqlite3_free(cur);
   return SQLITE_OK;
@@ -378,7 +379,6 @@ static int linesFilter(
     pCur->rowid_eq_yielded = 0;
     while(pCur->iRowid < targetRowid && pCur->curLineLength >= 0) {
       size_t len = 0;
-  
       pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
       pCur->iRowid++;
     }
