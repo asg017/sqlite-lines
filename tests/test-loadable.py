@@ -23,6 +23,9 @@ def connect():
 
 db = connect()
 
+def explain_query_plan(sql):
+  return db.execute("explain query plan " + sql).fetchone()["detail"]
+
 def execute_all(sql, args=None):
   if args is None: args = []
   results = db.execute(sql, args).fetchall()
@@ -109,83 +112,39 @@ class TestLines(unittest.TestCase):
       execute_all("select length(line) from lines_read('test_files/big-line-line.txt');")
   
   def test_lines_query_plan(self):
-    self.assertEqual(
-      execute_all("explain query plan select line from lines('') where rowid = 0;"),
-      [{
-        "id": 2,
-        "parent": 0,
-        "notused": 0,
-        "detail": "SCAN lines VIRTUAL TABLE INDEX 2:RP0"
-      }]
+    self.assertIn(
+      explain_query_plan("select line from lines('') where rowid = 0;"),
+      ["SCAN lines VIRTUAL TABLE INDEX 2:RP0", "SCAN TABLE lines VIRTUAL TABLE INDEX 2:RP0"]
     )
-    self.assertEqual(
-      execute_all("explain query plan select line from lines('', 'a') where rowid = 0;"),
-      [{
-        "id": 2,
-        "parent": 0,
-        "notused": 0,
-        "detail": "SCAN lines VIRTUAL TABLE INDEX 2:RPD"
-      }]
+    self.assertIn(
+      explain_query_plan("select line from lines('', 'a') where rowid = 0;"),
+      ["SCAN lines VIRTUAL TABLE INDEX 2:RPD", "SCAN TABLE lines VIRTUAL TABLE INDEX 2:RPD"]
     )
-    self.assertEqual(
-      execute_all("explain query plan select line from lines('')"),
-      [{
-        "id": 2,
-        "parent": 0,
-        "notused": 0,
-        "detail": "SCAN lines VIRTUAL TABLE INDEX 1:P00"
-      }]
+    self.assertIn(
+      explain_query_plan("select line from lines('')"),
+      ["SCAN lines VIRTUAL TABLE INDEX 1:P00", "SCAN TABLE lines VIRTUAL TABLE INDEX 1:P00"]
     )
+
     # TODO should be "document" for lines()
     with self.assertRaisesRegex(sqlite3.OperationalError, 'path argument is required'):
-      self.assertEqual(
-        execute_all("explain query plan select line from lines_read"),
-        [{
-          "id": 2,
-          "parent": 0,
-          "notused": 0,
-          "detail": "SCAN lines_read VIRTUAL TABLE INDEX 1:P00"
-        }]
-      )
+      explain_query_plan("select line from lines_read")
   
   def test_lines_read_query_plan(self):
-    self.assertEqual(
-      execute_all("explain query plan select line from lines_read('') where rowid = 0;"),
-      [{
-        "id": 2,
-        "parent": 0,
-        "notused": 0,
-        "detail": "SCAN lines_read VIRTUAL TABLE INDEX 2:RP0"
-      }]
+    self.assertIn(
+      explain_query_plan("select line from lines_read('') where rowid = 0;"),
+      ["SCAN lines_read VIRTUAL TABLE INDEX 2:RP0", "SCAN TABLE lines_read VIRTUAL TABLE INDEX 2:RP0"]
+
     )
-    self.assertEqual(
-      execute_all("explain query plan select line from lines_read('', 'a') where rowid = 0;"),
-      [{
-        "id": 2,
-        "parent": 0,
-        "notused": 0,
-        "detail": "SCAN lines_read VIRTUAL TABLE INDEX 2:RPD"
-      }]
+    self.assertIn(
+      explain_query_plan("select line from lines_read('', 'a') where rowid = 0;"),
+      ["SCAN lines_read VIRTUAL TABLE INDEX 2:RPD", "SCAN TABLE lines_read VIRTUAL TABLE INDEX 2:RPD"]
     )
-    self.assertEqual(
-      execute_all("explain query plan select line from lines_read('')"),
-      [{
-        "id": 2,
-        "parent": 0,
-        "notused": 0,
-        "detail": "SCAN lines_read VIRTUAL TABLE INDEX 1:P00"
-      }]
+    self.assertIn(
+      explain_query_plan("select line from lines_read('')"),
+      ["SCAN lines_read VIRTUAL TABLE INDEX 1:P00", "SCAN TABLE lines_read VIRTUAL TABLE INDEX 1:P00"]
     )
     with self.assertRaisesRegex(sqlite3.OperationalError, 'path argument is required'):
-      self.assertEqual(
-        execute_all("explain query plan select line from lines_read"),
-        [{
-          "id": 2,
-          "parent": 0,
-          "notused": 0,
-          "detail": "SCAN lines_read VIRTUAL TABLE INDEX 1:P00"
-        }]
-      )
+      explain_query_plan("select line from lines_read")
       
 if __name__ == '__main__':
     unittest.main()
