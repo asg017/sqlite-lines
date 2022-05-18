@@ -369,6 +369,7 @@ static int linesFilter(
   }
   
   size_t len = 0;
+  pCur->curLineContents = 0;
   pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
   pCur->iRowid = 1;
   pCur->delim = delim;
@@ -435,6 +436,7 @@ static int linesReadFilter(
   }
 
   size_t len = 0;
+  pCur->curLineContents = 0;
   pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
   pCur->iRowid = 1;
   pCur->delim = delim;
