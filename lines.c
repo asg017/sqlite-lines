@@ -334,6 +334,7 @@ static int linesFilter(
   if(pCur->fp != NULL) {
     fclose(pCur->fp);
   }
+  if(pCur->curLineContents != NULL) free(pCur->curLineContents);
   
   for(int i = 0; i < 3; i++) {
     switch (idxStr[i]) {
@@ -400,6 +401,7 @@ static int linesReadFilter(
   if(pCur->fp != NULL) {
     fclose(pCur->fp);
   }
+  if(pCur->curLineContents != NULL) free(pCur->curLineContents);
 
   for(int i = 0; i < 3; i++) {
     switch (idxStr[i]) {
