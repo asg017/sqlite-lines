@@ -131,7 +131,7 @@ static int linesOpen(sqlite3_vtab *pUnused, sqlite3_vtab_cursor **ppCursor){
 */
 static int linesClose(sqlite3_vtab_cursor *cur){
   lines_cursor *pCur = (lines_cursor*)cur;
-  fclose(pCur->fp);
+  if(pCur->fp != NULL) fclose(pCur->fp);
   sqlite3_free(cur);
   return SQLITE_OK;
 }
