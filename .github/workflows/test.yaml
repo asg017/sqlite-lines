@@ -1,0 +1,31 @@
+name: "build"
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test-macos:
+    name: Test on MacOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build + Test
+        env:
+          ENV: CI
+        run: |
+          mkdir -p dist/
+          make -j 4 dist/package.zip
+          make test
+  build-linux:
+    name: Build for Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          ENV: CI
+        run: |
+          mkdir -p dist/
+          make -j 4 dist/package.zip
+          make test

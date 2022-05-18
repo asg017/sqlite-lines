@@ -2,8 +2,7 @@ name: "build"
 on:
   release:
     types: [published]
-  push:
-  pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -79,5 +78,5 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const script = require('./release.js')
+            const script = require('.github/workflows/release.js')
             await script({github, context})
