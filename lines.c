@@ -47,6 +47,7 @@ struct lines_cursor {
   // length of current line 
   size_t curLineLength;
   char* curLineContents;
+  size_t curLineLen;
   char delim;
   int idxNum;
   int rowid_eq_yielded;
@@ -130,7 +131,7 @@ static int linesOpen(sqlite3_vtab *pUnused, sqlite3_vtab_cursor **ppCursor){
 ** Destructor for a lines_cursor.
 */
 static int linesClose(sqlite3_vtab_cursor *cur){
-  lines_cursor *pCur = (lines_cursor*)cur;
+  lines_cursor *pCur = (lines_cursor*)cur;  
   if(pCur->curLineContents != NULL) free(pCur->curLineContents);
   if(pCur->fp != NULL) fclose(pCur->fp);
   sqlite3_free(cur);
@@ -144,8 +145,7 @@ static int linesClose(sqlite3_vtab_cursor *cur){
 static int linesNext(sqlite3_vtab_cursor *cur){
   lines_cursor *pCur = (lines_cursor*)cur;
   pCur->iRowid++;
-  size_t len = 0;
-  pCur->curLineLength = getdelim(&pCur->curLineContents, &len, pCur->delim, pCur->fp);
+  pCur->curLineLength = getdelim(&pCur->curLineContents, &pCur->curLineLen, pCur->delim, pCur->fp);
   return SQLITE_OK;
 }
 
@@ -369,9 +369,8 @@ static int linesFilter(
     }
   }
   
-  size_t len = 0;
   pCur->curLineContents = 0;
-  pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
+  pCur->curLineLength = getdelim(&pCur->curLineContents, &pCur->curLineLen, delim, pCur->fp);
   pCur->iRowid = 1;
   pCur->delim = delim;
   pCur->idxNum = idxNum;
@@ -380,8 +379,7 @@ static int linesFilter(
   if(pCur->idxNum == LINES_IDXNUM_ROWID_EQ) {
     pCur->rowid_eq_yielded = 0;
     while(pCur->iRowid < targetRowid && pCur->curLineLength >= 0) {
-      size_t len = 0;
-      pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
+      pCur->curLineLength = getdelim(&pCur->curLineContents, &pCur->curLineLen, delim, pCur->fp);
       pCur->iRowid++;
     }
   } 
@@ -437,9 +435,8 @@ static int linesReadFilter(
     }
   }
 
-  size_t len = 0;
   pCur->curLineContents = 0;
-  pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
+  pCur->curLineLength = getdelim(&pCur->curLineContents, &pCur->curLineLen, delim, pCur->fp);
   pCur->iRowid = 1;
   pCur->delim = delim;
   pCur->idxNum = idxNum;
@@ -447,8 +444,7 @@ static int linesReadFilter(
   if(pCur->idxNum == LINES_IDXNUM_ROWID_EQ) {
     pCur->rowid_eq_yielded = 0;
     while(pCur->iRowid < targetRowid && pCur->curLineLength >= 0) {
-      size_t len = 0;
-      pCur->curLineLength = getdelim(&pCur->curLineContents, &len, delim, pCur->fp);
+      pCur->curLineLength = getdelim(&pCur->curLineContents, &pCur->curLineLen, delim, pCur->fp);
       pCur->iRowid++;
     }
   }
