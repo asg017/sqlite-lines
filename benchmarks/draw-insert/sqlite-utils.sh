@@ -1,2 +1,2 @@
 #!/bin/bash
-sqlite-utils insert sqlite-utils.db drawings /Volumes/Sandisk1/draw/data/simplified/calendar.ndjson --nl
+sqlite-utils insert sqlite-utils.db drawings ../_data/calendar.ndjson --nl

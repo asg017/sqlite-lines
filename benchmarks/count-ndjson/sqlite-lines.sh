@@ -1,5 +1,5 @@
 #!/bin/bash
-sqlite3x :memory: \
+sqlite3 :memory: \
   '.bail on' '.load ../../dist/lines0' \
   "select
     count(*)

@@ -7,8 +7,8 @@ hyperfine \
   './ndjson-cli.sh' \
   './duck.sh' \
   './dsq.sh' \
-  './sqlite-utils.sh'
-  #'./zq-json.sh' \
-  #'./py.sh' \
-  #'./py-pandas.sh' \
+  './sqlite-utils.sh' \
+  './zq-json.sh' \
+  './py.sh' \
+  './py-pandas.sh' \
   

@@ -1,7 +1,7 @@
 #!/bin/bash
-sqlite3x :memory: \
-  '.bail on' '.load ../../dist/lines' \
+sqlite3 :memory: \
+  '.bail on' '.load ../../dist/lines0' \
   "select count(*)
   from lines_read('/usr/share/dict/words')
-  where contents like 'sh%'
+  where line like 'sh%'
   "

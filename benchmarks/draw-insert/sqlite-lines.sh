@@ -9,4 +9,4 @@ sqlite3x sqlite-lines.db \
     contents ->> '$.recognized' as recognized,
     contents ->> '$.key_id' as key_id,
     contents ->> '$.drawing' as drawing
-  from lines_read('/Volumes/Sandisk1/draw/data/simplified/calendar.ndjson')"
+  from lines_read('../_data/calendar.ndjson')"
