@@ -4,15 +4,16 @@ import time
 import os
 
 EXT_PATH="./dist/lines0"
+EXT_NOFS_PATH="./dist/lines_nofs0"
 
-def connect():
+def connect(ext):
   db = sqlite3.connect(":memory:")
 
   db.execute("create table base_functions as select name from pragma_function_list")
   db.execute("create table base_modules as select name from pragma_module_list")
 
   db.enable_load_extension(True)
-  db.load_extension(EXT_PATH)
+  db.load_extension(ext)
 
   db.execute("create temp table loaded_functions as select name from pragma_function_list where name not in (select name from base_functions) order by name")
   db.execute("create temp table loaded_modules as select name from pragma_module_list where name not in (select name from base_modules) order by name")
@@ -21,7 +22,8 @@ def connect():
   return db
 
 
-db = connect()
+db = connect(EXT_PATH)
+db_nofs = connect(EXT_NOFS_PATH)
 
 def explain_query_plan(sql):
   return db.execute("explain query plan " + sql).fetchone()["detail"]
@@ -44,14 +46,29 @@ class TestLines(unittest.TestCase):
       "lines",
       "lines_read",
     ])
+
+    modules_nofs = list(map(lambda a: a[0], db_nofs.execute("select name from loaded_modules").fetchall()))
+    self.assertEqual(modules_nofs, [
+      "lines",
+    ])
+    
   def test_lines_version(self):
+    with open("./VERSION") as f:
+      version = f.read()
     v, = db.execute("select lines_version()").fetchone()
-    self.assertEqual(v, "v0.0.-7")
+    self.assertEqual(v, version)
 
   def test_lines_debug(self):
-    debug, = db.execute("select lines_debug()").fetchone()
-    self.assertEqual(debug.split('\n')[0], "Version: v0.0.-7")
-    self.assertTrue(debug.split('\n')[1].startswith("Date: "))
+    debug = db.execute("select lines_debug()").fetchone()[0].split('\n')
+    debug_nofs = db_nofs.execute("select lines_debug()").fetchone()[0].split('\n')
+    self.assertEqual(len(debug), 3)
+    self.assertEqual(len(debug_nofs), 4)
+
+    self.assertTrue(debug[0].startswith("Version: v"))
+    self.assertTrue(debug[1].startswith("Date: "))
+    self.assertTrue(debug[2].startswith("Source: "))
+    self.assertTrue(debug_nofs[3] == "NO FILESYSTEM")
+  
   def test_lines(self):
     self.assertEqual(execute_all("select rowid, delimiter, document, line from lines(?)", ["a\nb"]), [
       {"rowid": 1, "delimiter": "\n", "document": "", "line": "a"},

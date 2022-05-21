@@ -1,5 +1,5 @@
 COMMIT=$(shell git rev-parse HEAD)
-VERSION=v0.0.-7
+VERSION=$(shell cat VERSION)
 DATE=$(shell date +'%FT%TZ%z')
 
 LOADABLE_CFLAGS=-fPIC -shared
@@ -26,6 +26,7 @@ DEFINE_SQLITE_LINES=$(DEFINE_SQLITE_LINES_DATE) $(DEFINE_SQLITE_LINES_VERSION) $
 TARGET_OBJ=dist/lines.o
 TARGET_CLI=dist/sqlite-lines
 TARGET_LOADABLE=dist/lines0.$(LOADABLE_EXTENSION)
+TARGET_LOADABLE_NOFS=dist/lines_nofs0.$(LOADABLE_EXTENSION)
 TARGET_SQLITE3=dist/sqlite3
 TARGET_PACKAGE=dist/package.zip
 TARGET_SQLJS_JS=dist/sqljs.js
@@ -37,7 +38,7 @@ all: dist/package.zip $(TARGET_SQLJS)
 clean:
 	rm dist/*
 
-loadable: $(TARGET_LOADABLE)
+loadable: $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS)
 cli: $(TARGET_CLI)
 sqlite3: $(TARGET_SQLITE3)
 wasm: $(TARGET_SQLJS)
@@ -49,6 +50,12 @@ $(TARGET_LOADABLE): lines.c
 	gcc -Isqlite \
 	$(LOADABLE_CFLAGS) \
 	$(DEFINE_SQLITE_LINES) \
+	$< -o $@
+
+$(TARGET_LOADABLE_NOFS): lines.c
+	gcc -Isqlite \
+	$(LOADABLE_CFLAGS) \
+	$(DEFINE_SQLITE_LINES) -DSQLITE_LINES_DISABLE_FILESYSTEM \
 	$< -o $@
 
 $(TARGET_CLI): cli.c lines.c

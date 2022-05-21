@@ -537,7 +537,11 @@ static sqlite3_module linesReadModule = {
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
+#ifdef SQLITE_LINES_DISABLE_FILESYSTEM
+int sqlite3_linesnofs_init(
+#else
 int sqlite3_lines_init(
+#endif
   sqlite3 *db, 
   char **pzErrMsg, 
   const sqlite3_api_routines *pApi
@@ -548,8 +552,7 @@ int sqlite3_lines_init(
   if(rc == SQLITE_OK) rc = sqlite3_create_function(db, "lines_version", 0, SQLITE_UTF8|SQLITE_INNOCUOUS|SQLITE_DETERMINISTIC, 0, linesVersionFunc, 0, 0); 
   if(rc == SQLITE_OK) rc = sqlite3_create_function(db, "lines_debug", 0, SQLITE_UTF8|SQLITE_INNOCUOUS|SQLITE_DETERMINISTIC, 0, linesDebugFunc, 0, 0); 
 
-  if(rc == SQLITE_OK) rc = sqlite3_create_module(db, "lines", &linesModule, 0);
-  
+  if(rc == SQLITE_OK) rc = sqlite3_create_module(db, "lines", &linesModule, 0);  
 #ifndef SQLITE_LINES_DISABLE_FILESYSTEM
   if(rc == SQLITE_OK) rc = sqlite3_create_module(db, "lines_read", &linesReadModule, 0);  
 #endif

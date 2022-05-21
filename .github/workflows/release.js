@@ -26,6 +26,7 @@ module.exports = async ({ github, context }) => {
   }
   await Promise.all([
     uploadReleaseAsset("lines0.so", "lines0-linux-amd64/lines0.so"),
+    uploadReleaseAsset("lines_nofs0.so", "lines0-linux-amd64/lines_nofs0.so"),
     uploadReleaseAsset(
       "lines0-linux-amd64-sqlite-lines",
       "lines0-linux-amd64/sqlite-lines"
@@ -39,6 +40,10 @@ module.exports = async ({ github, context }) => {
       "lines0-linux-amd64/package.zip"
     ),
     uploadReleaseAsset("lines0.dylib", "lines0-darwin-amd64/lines0.dylib"),
+    uploadReleaseAsset(
+      "lines_nofs0.dylib",
+      "lines0-darwin-amd64/lines_nofs0.dylib"
+    ),
     uploadReleaseAsset(
       "lines0-darwin-amd64-sqlite-lines",
       "lines0-darwin-amd64/sqlite-lines"

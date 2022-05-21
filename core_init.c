@@ -5,5 +5,11 @@
 */
 #include "lines.h"
 int core_init(const char* dummy) {
-  return sqlite3_auto_extension((void*)sqlite3_lines_init);
+  return sqlite3_auto_extension((void*)
+    #ifdef SQLITE_LINES_DISABLE_FILESYSTEM
+    sqlite3_linesnofs_init
+    #else
+    sqlite3_lines_init
+    #endif
+  );
 }
