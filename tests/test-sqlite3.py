@@ -38,7 +38,8 @@ class TestSqliteLinesCli(unittest.TestCase):
         select name, line 
         from fsdir("test_files") 
         join lines_read(name) as lines
-        where name like 'test_files/x%' and  lines.rowid = 1;
+        where name like 'test_files/x%' and  lines.rowid = 1
+        order by 1;
       """]).stdout,  
       "test_files/x2.txt|x2!\ntest_files/x1.txt|x1!\n"
     )

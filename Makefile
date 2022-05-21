@@ -75,6 +75,14 @@ $(TARGET_OBJ): lines.c lines.h
 dist/sqlite3-extra.c: sqlite/sqlite3.c core_init.c
 	cat sqlite/sqlite3.c core_init.c > $@
 
+test_files/big.txt:
+	seq 1 1000000 > $@
+
+test_files/big-line-line.txt:
+	dd if=/dev/zero of=$@ bs=1000000 count=1001
+
+test_files: test_files/big.txt test_files/big-line-line.txt
+
 test: 
 	make test-cli
 	make test-loadable
@@ -107,6 +115,7 @@ test-sqlite3-watch: $(TARAGET_SQLITE3)
 .PHONY: all clean \
 	test test-watch test-loadable-watch test-cli-watch test-sqlite3-watch \
 	test-loadable test-cli test-sqlite3 test-sqljs \
+	test_files \
 	loadable cli sqlite3 wasm
 
 # The below is mostly borrowed from https://github.com/sql-js/sql.js/blob/master/Makefile
