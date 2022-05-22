@@ -2,7 +2,7 @@
 
 `sqlite-lines` is a SQLite extension for reading lines from a file or blob.
 
-![](./benchmarks/calc.png)
+<img src="./benchmarks/calc.png" alt="Benchmark between sqlite-lines and various other data processing tools" width="600"/>
 
 See [Benchmarks](./benchmarks) for more info.
 
