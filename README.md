@@ -71,7 +71,7 @@ For example, if you are using the [SQLite CLI](https://www.sqlite.org/cli.html),
 ```sql
 .load ./lines0
 select lines_version();
--- v0.0.-1
+-- v0.0.0
 ```
 
 Or in Python, using the builtin [sqlite3 module](https://docs.python.org/3/library/sqlite3.html):
@@ -149,6 +149,6 @@ The third argument is another SQL expression that's used in the GROUP BY stateme
 
 ### A Note on CSV Parsing
 
-`sqlite-lines` isn't a great option for CSVs. Technically you can, but the momemnt your data has a `\n` character in a field or header, then you'll get corrupted results.
+`sqlite-lines` isn't a great option for CSVs. Technically you can, but the moment your data has a `\n` character in a field or header, then you'll get corrupted results.
 
 Instead, you should use the "official" [CSV Virtual Table](https://www.sqlite.org/csv.html), or use the [`.import`](https://www.sqlite.org/cli.html#csv) command in the SQLite CLI.

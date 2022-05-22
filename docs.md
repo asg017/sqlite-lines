@@ -4,7 +4,7 @@
 
 ### As a Loadable Extension
 
-`sqlite-lines` can be used as a [run-time loadable extension](https://www.sqlite.org/loadext.html). Depending on your machine's operating system, you can download either the `.dylib` (MacOS) or `.so` (Linux) shared library files (from either the TODO or [building yourself](#building-yourself)) and dynmically load it in your codebase.
+`sqlite-lines` can be used as a [run-time loadable extension](https://www.sqlite.org/loadext.html). Depending on your machine's operating system, you can download either the `.dylib` (MacOS) or `.so` (Linux) shared library files (from either the TODO or [building yourself](#building-yourself)) and dynamically load it in your codebase.
 
 The default build will load all scalar and table functions available and documented under [API Reference](#api-reference).
 
@@ -12,9 +12,65 @@ The default build will load all scalar and table functions available and documen
 
 If you want to statically link `sqlite-lines` utilities into your own SQLite application, or if you want to build `sqlite-lines` for a different architecture, you'll need to build it yourself.
 
+Building anything will require a `gcc` compiler and a MacOS/Linux machine (Windows not supported).
+
+```
+git clone git@github.com:asg017/sqlite-lines.git
+cd sqlite-lines
+```
+
+#### Building a loadable extension
+
+```
+make loadable
+```
+
+This will create a `dist/html0.dylib` (MacOS) or `dist/html0.so` (Linux)[runtime-loadable extension[(https://www.sqlite.org/loadext.html).
+
+To test, which requires `python3`:
+
+```
+make test-loadable
+```
+
+#### Building the SQLite CLI with `sqlite-lines` included
+
+```
+make sqlite3
+make test-sqlite3
+```
+
+#### Building the `sqlite-lines` CLI
+
+```
+make cli
+make test-cli
+```
+
+#### Building the WASM sql.js with `sqlite-lines` included
+
+Requires [emscripten](https://github.com/emscripten-core/emscripten).
+
+```
+make sqljs
+
+# will start a local server and open tests/test-sqljs.html for manual testing
+make test-sqljs
+```
+
+#### Building into your own application
+
+You have a few options. You only really need the `lines.h` and `lines.c`, so you could copy+paste those files into your own C/C++ application and bundle like that.
+
+Additionally, you can run `make dist/lines0.o` to create an object file, and use that to link to your application.
+
+If you want to load `sqlite-lines` functions/tables into a SQLite connection by default, look into the [`sqlite3_auto_extension()`](https://www.sqlite.org/c3ref/auto_extension.html) API and the `SQLITE_EXTRA_INIT` SQLite compile-time option (this project's Makefile has a few examples).
+
 #### Compile-time options
 
-##### `SQLITE_LINES_DISABLE_FILESYSTEM`
+**`SQLITE_LINES_DISABLE_FILESYSTEM`** is an option that removes the `lines_read()` table function from the compiled output. This is the sole `sqlite-lines` function that touches the file system (where `lines()` only deals with in-memory data), which can be a security issue if you're running SQL queries from untrusted sources, like with Datasette.
+
+Defining this option will also change the entrypoint from `sqlite3_lines_init` to `sqlite3_linesnofs_init`, because the compiled loadable extension for this option is named `./lines_nofs0` instead of `./lines0`.
 
 ## API Reference
 

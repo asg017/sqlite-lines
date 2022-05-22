@@ -41,7 +41,7 @@ clean:
 loadable: $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS)
 cli: $(TARGET_CLI)
 sqlite3: $(TARGET_SQLITE3)
-wasm: $(TARGET_SQLJS)
+sqljs: $(TARGET_SQLJS)
 
 $(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
 	zip --junk-paths $@ $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
@@ -105,7 +105,7 @@ test-loadable: $(TARGET_LOADABLE)
 	python3 tests/test-loadable.py
 
 test-sqljs: $(TARGET_SQLJS)
-	file_server & open http://localhost:4507/tests/test-sqljs.html
+	python3 -m http.server & open http://localhost:8000/tests/test-sqljs.html
 
 test-watch:
 	watchexec -w lines.c -w tests/ -w tests/ --clear make test
@@ -123,7 +123,7 @@ test-sqlite3-watch: $(TARAGET_SQLITE3)
 	test test-watch test-loadable-watch test-cli-watch test-sqlite3-watch \
 	test-loadable test-cli test-sqlite3 test-sqljs \
 	test_files \
-	loadable cli sqlite3 wasm
+	loadable cli sqlite3 sqljs
 
 # The below is mostly borrowed from https://github.com/sql-js/sql.js/blob/master/Makefile
 

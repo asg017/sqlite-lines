@@ -10,5 +10,5 @@ hyperfine \
   './sqlite-utils.sh' \
   './zq-json.sh' \
   './py.sh' \
-  './py-pandas.sh' \
+  './py-pandas.sh'
   

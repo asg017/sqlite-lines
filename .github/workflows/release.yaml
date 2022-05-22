@@ -54,7 +54,7 @@ jobs:
         run: emcc -v
       - run: |
           mkdir -p dist/
-          make wasm
+          make sqljs
       - uses: actions/upload-artifact@v2
         with:
           name: lines0-sqljs

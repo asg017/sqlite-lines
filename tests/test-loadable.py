@@ -33,19 +33,23 @@ def execute_all(sql, args=None):
   results = db.execute(sql, args).fetchall()
   return list(map(lambda x: dict(x), results))
 
+FUNCTIONS = [
+  "lines_debug",
+  "lines_version",
+]
+
+MODULES = [
+  "lines",
+  "lines_read",
+]
 class TestLines(unittest.TestCase):
   def test_funcs(self):
     funcs = list(map(lambda a: a[0], db.execute("select name from loaded_functions").fetchall()))
-    self.assertEqual(funcs, [
-      'lines_debug',
-      'lines_version',
-    ])
+    self.assertEqual(funcs, FUNCTIONS)
+
   def test_modules(self):
     modules = list(map(lambda a: a[0], db.execute("select name from loaded_modules").fetchall()))
-    self.assertEqual(modules, [
-      "lines",
-      "lines_read",
-    ])
+    self.assertEqual(modules, MODULES)
 
     modules_nofs = list(map(lambda a: a[0], db_nofs.execute("select name from loaded_modules").fetchall()))
     self.assertEqual(modules_nofs, [
@@ -55,8 +59,8 @@ class TestLines(unittest.TestCase):
   def test_lines_version(self):
     with open("./VERSION") as f:
       version = f.read()
-    v, = db.execute("select lines_version()").fetchone()
-    self.assertEqual(v, version)
+    
+    self.assertEqual(db.execute("select lines_version()").fetchone()[0], version)
 
   def test_lines_debug(self):
     debug = db.execute("select lines_debug()").fetchone()[0].split('\n')
@@ -162,6 +166,13 @@ class TestLines(unittest.TestCase):
     )
     with self.assertRaisesRegex(sqlite3.OperationalError, 'path argument is required'):
       explain_query_plan("select line from lines_read")
-      
+
+class TestCoverage(unittest.TestCase):                                      
+  def test_coverage(self):                                                      
+    test_methods = [method for method in dir(TestLines) if method.startswith('test_lines')]
+    funcs_with_tests = set([x.replace("test_", "") for x in test_methods])
+    for func in FUNCTIONS:
+      self.assertTrue(func in funcs_with_tests, f"{func} does not have cooresponding test in {funcs_with_tests}")
+
 if __name__ == '__main__':
     unittest.main()
