@@ -2,6 +2,10 @@
 
 `sqlite-lines` is a SQLite extension for reading lines from a file or blob.
 
+![](./benchmarks/calc.png)
+
+See [Benchmarks](./benchmarks) for more info.
+
 ```sql
 .load ./lines0
 select line from lines_read('logs.txt');
@@ -52,7 +56,7 @@ c.txt|1|xxx
 
 ## Documentation
 
-See [`docs.md`](./docs.md) for a full API Reference and detailed documentations.
+See [`docs.md`](./docs.md) for a full API Reference and detailed documentation.
 
 ## Installing
 
@@ -142,3 +146,9 @@ cat data.ndjson | sqlite-lines 'd ->> "$.name"' 'd ->> "$.age" > 40'
 ```
 
 The third argument is another SQL expression that's used in the GROUP BY statement of the underlying SQL query to aggregate lines.
+
+### A Note on CSV Parsing
+
+`sqlite-lines` isn't a great option for CSVs. Technically you can, but the momemnt your data has a `\n` character in a field or header, then you'll get corrupted results.
+
+Instead, you should use the "official" [CSV Virtual Table](https://www.sqlite.org/csv.html), or use the [`.import`](https://www.sqlite.org/cli.html#csv) command in the SQLite CLI.

@@ -33,7 +33,7 @@ TARGET_SQLJS_JS=dist/sqljs.js
 TARGET_SQLJS_WASM=dist/sqljs.wasm
 TARGET_SQLJS=$(TARGET_SQLJS_JS) $(TARGET_SQLJS_WASM)
 
-all: dist/package.zip $(TARGET_SQLJS)
+all: $(TARGET_PACKAGE) $(TARGET_SQLJS)
 
 clean:
 	rm dist/*
@@ -43,8 +43,8 @@ cli: $(TARGET_CLI)
 sqlite3: $(TARGET_SQLITE3)
 wasm: $(TARGET_SQLJS)
 
-$(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
-	zip --junk-paths $@ $(TARGET_LOADABLE)  $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
+$(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
+	zip --junk-paths $@ $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
 
 $(TARGET_LOADABLE): lines.c
 	gcc -Isqlite \
