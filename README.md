@@ -24,12 +24,15 @@ group by 1
 order by 2 desc
 limit 5;
 /*
-countrycode|count(*)
-US|141001
-GB|22560
-CA|11759
-RU|9250
-DE|8748
+┌─────────────┬──────────┐
+│ countrycode │ count(*) │
+├─────────────┼──────────┤
+│ US          │ 141001   │
+│ GB          │ 22560    │
+│ CA          │ 11759    │
+│ RU          │ 9250     │
+│ DE          │ 8748     │
+└─────────────┴──────────┘
 */
 ```
 
@@ -44,13 +47,16 @@ from fsdir("logs")
 join lines_read(name) as lines
 where name like '%.txt';
 /*
-file|line_number|line
-a.txt|1|x
-a.txt|2|y
-a.txt|3|z
-b.txt|1|xx
-b.txt|2|yy
-c.txt|1|xxx
+┌─────────────────────┬──────┐
+│ file  │ line_number | line │
+├───────┼─────────────┤──────┤
+| a.txt | 1           | x    |
+| a.txt | 2           | y    |
+| a.txt | 3           | z    |
+| b.txt | 1           | xx   |
+| b.txt | 2           | yy   |
+| c.txt | 1           | xxx  |
+└───────┴─────────────┴──────┘
 */
 ```
 
@@ -113,14 +119,14 @@ Check out [this Observable notebook](https://observablehq.com/@asg017/sqlite-lin
 
 ### The sqlite-lines CLI
 
-`sqlite-lines` comes with an example CLI modeled after [ndjson-cli](https://github.com/mbostock/ndjson-cli) that demos the speed and versatility to `sqlite-lines`. Download a pre-compiled version from the [Releases page](https://github.com/asg017/sqlite-lines/releases), or build yourself with:
+`sqlite-lines` comes with an example CLI modeled after [ndjson-cli](https://github.com/mbostock/ndjson-cli) that demos the speed and versatility of `sqlite-lines`. Download a pre-compiled version from the [Releases page](https://github.com/asg017/sqlite-lines/releases), or build yourself with:
 
 ```
 make cli
 ./dist/sqlite-lines
 ```
 
-The `sqlite-lines` CLI reads data from stdin and applies transformations with SQL code through it's arguments.
+The `sqlite-lines` CLI reads data from stdin and applies transformations with SQL code through its arguments.
 
 The first argument should be a SQL expression that is used transform a single line from stdlin. The available columns are `rowid`, which is the "line number" that is being processed, and `d`, an alias for `line`, which is the text content of the current line (inspired by ndjson-cli). For example, to uppercase every line from a file with [`upper()`](https://www.sqlite.org/lang_corefunc.html#upper):
 
