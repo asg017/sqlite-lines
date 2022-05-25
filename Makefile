@@ -38,6 +38,10 @@ all: $(TARGET_PACKAGE) $(TARGET_SQLJS)
 clean:
 	rm dist/*
 
+FORMAT_FILES=lines.h lines.c cli.c core_init.c
+format: $(FORMAT_FILES)
+	clang-format -i $(FORMAT_FILES)
+
 loadable: $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS)
 cli: $(TARGET_CLI)
 sqlite3: $(TARGET_SQLITE3)
@@ -91,18 +95,23 @@ test_files/big-line-line.txt:
 test_files: test_files/big.txt test_files/big-line-line.txt
 
 test: 
-	make test-cli
+	make test-format
 	make test-loadable
+	make test-cli
 	make test-sqlite3
+
+test-format: SHELL:=/bin/bash
+test-format:
+	diff -u <(cat $(FORMAT_FILES)) <(clang-format $(FORMAT_FILES))
+
+test-loadable: $(TARGET_LOADABLE)
+	python3 tests/test-loadable.py
 
 test-cli: $(TARGET_CLI)
 	python3 tests/test-cli.py
 
 test-sqlite3: $(TARGET_SQLITE3)
 	python3 tests/test-sqlite3.py
-
-test-loadable: $(TARGET_LOADABLE)
-	python3 tests/test-loadable.py
 
 test-sqljs: $(TARGET_SQLJS)
 	python3 -m http.server & open http://localhost:8000/tests/test-sqljs.html
@@ -119,9 +128,9 @@ test-cli-watch: $(TARGET_CLI) tests/test-cli.py
 test-sqlite3-watch: $(TARAGET_SQLITE3)
 	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py --clear -- make test-sqlite3
 
-.PHONY: all clean \
+.PHONY: all clean format \
 	test test-watch test-loadable-watch test-cli-watch test-sqlite3-watch \
-	test-loadable test-cli test-sqlite3 test-sqljs \
+	test-format test-loadable test-cli test-sqlite3 test-sqljs \
 	test_files \
 	loadable cli sqlite3 sqljs
 

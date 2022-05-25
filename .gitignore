@@ -6,3 +6,4 @@ bench/**/results.json
 benchmarks/_data
 test_files/big-line-line.txt
 test_files/big.txt
+.vscode

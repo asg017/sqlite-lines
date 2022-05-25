@@ -1,3 +1,8 @@
+## TODO
+
+- [ ] use pAux in lines/lines_read to re-use code better
+- [ ] use `LINES_IDXSTR_LENGTH` constant
+
 # sqlite-lines
 
 `sqlite-lines` is a SQLite extension for reading lines from a file or blob.
