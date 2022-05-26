@@ -339,7 +339,7 @@ static int linesFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
   if (pCur->curLineContents != NULL)
     free(pCur->curLineContents);
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < LINES_IDXSTR_LENGTH; i++) {
     switch (idxStr[i]) {
     case LINES_IDXSTR_ROWID: {
       targetRowid = sqlite3_value_int64(argv[i]);
@@ -405,7 +405,7 @@ static int linesReadFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
   if (pCur->curLineContents != NULL)
     free(pCur->curLineContents);
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < LINES_IDXSTR_LENGTH; i++) {
     switch (idxStr[i]) {
     case LINES_IDXSTR_ROWID: {
       targetRowid = sqlite3_value_int64(argv[i]);

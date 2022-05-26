@@ -46,6 +46,8 @@ loadable: $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS)
 cli: $(TARGET_CLI)
 sqlite3: $(TARGET_SQLITE3)
 sqljs: $(TARGET_SQLJS)
+fuzz:
+	clang -g -O1 -fsanitize=fuzzer -I./ -I./sqlite $(DEFINE_SQLITE_LINES) lines.c
 
 $(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
 	zip --junk-paths $@ $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
@@ -62,13 +64,13 @@ $(TARGET_LOADABLE_NOFS): lines.c
 	$(DEFINE_SQLITE_LINES) -DSQLITE_LINES_DISABLE_FILESYSTEM \
 	$< -o $@
 
-$(TARGET_CLI): cli.c lines.c
+$(TARGET_CLI): cli.c lines.c dist/sqlite3-extra.c sqlite/shell.c 
 	gcc -O3 \
 	 $(DEFINE_SQLITE_LINES) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
-	-Isqlite \
+	-I./ -Isqlite \
 	sqlite/sqlite3.c \
-	cli.c lines.c -o $@
+	cli.c dist/sqlite3-extra.c sqlite/shell.c lines.c -o $@
 
 $(TARGET_SQLITE3): dist/sqlite3-extra.c sqlite/shell.c lines.c
 	gcc \
