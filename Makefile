@@ -97,13 +97,12 @@ test_files/big-line-line.txt:
 test_files: test_files/big.txt test_files/big-line-line.txt
 
 test: 
-	make test-format
 	make test-loadable
 	make test-cli
 	make test-sqlite3
 
-test-format: SHELL:=/bin/bash
-test-format:
+lint: SHELL:=/bin/bash
+lint:
 	diff -u <(cat $(FORMAT_FILES)) <(clang-format $(FORMAT_FILES))
 
 test-loadable: loadable
