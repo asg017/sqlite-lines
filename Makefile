@@ -61,7 +61,9 @@ $(TARGET_LOADABLE): sqlite-lines.c
 $(TARGET_LOADABLE_NOFS): sqlite-lines.c
 	gcc -Isqlite \
 	$(LOADABLE_CFLAGS) \
-	$(DEFINE_SQLITE_LINES) -DSQLITE_LINES_DISABLE_FILESYSTEM \
+	$(DEFINE_SQLITE_LINES) \
+	-DSQLITE_LINES_DISABLE_FILESYSTEM \
+	-DSQLITE_LINES_ENTRYPOINT=sqlite3_linesnofs_init \
 	$< -o $@
 
 $(TARGET_CLI): cli.c sqlite-lines.c dist/sqlite3-extra.c sqlite/shell.c 
@@ -106,7 +108,7 @@ test-format: SHELL:=/bin/bash
 test-format:
 	diff -u <(cat $(FORMAT_FILES)) <(clang-format $(FORMAT_FILES))
 
-test-loadable: $(TARGET_LOADABLE)
+test-loadable: loadable
 	python3 tests/test-loadable.py
 
 test-cli: $(TARGET_CLI)

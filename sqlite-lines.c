@@ -541,8 +541,8 @@ static sqlite3_module linesReadModule = {
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-#ifdef SQLITE_LINES_DISABLE_FILESYSTEM
-    int sqlite3_linesnofs_init(
+#ifdef SQLITE_LINES_ENTRYPOINT
+    int SQLITE_LINES_ENTRYPOINT(
 #else
 int sqlite3_lines_init(
 #endif

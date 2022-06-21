@@ -6,8 +6,8 @@
 #include "sqlite-lines.h"
 int core_init(const char *dummy) {
   return sqlite3_auto_extension((void *)
-#ifdef SQLITE_LINES_DISABLE_FILESYSTEM
-                                    sqlite3_linesnofs_init
+#ifdef SQLITE_LINES_ENTRYPOINT
+                                    SQLITE_LINES_ENTRYPOINT
 #else
                                     sqlite3_lines_init
 #endif

@@ -68,9 +68,9 @@ If you want to load `sqlite-lines` functions/tables into a SQLite connection by 
 
 #### Compile-time options
 
-**`SQLITE_LINES_DISABLE_FILESYSTEM`** is an option that removes the `lines_read()` table function from the compiled output. This is the sole `sqlite-lines` function that touches the file system (where `lines()` only deals with in-memory data), which can be a security issue if you're running SQL queries from untrusted sources, like with Datasette.
+**`SQLITE_LINES_DISABLE_FILESYSTEM`** an option that removes the `lines_read()` table function from the compiled output. This is the sole `sqlite-lines` function that touches the file system (because `lines()` only deals with in-memory data), which can be a security issue if you're running SQL queries from untrusted sources, like with Datasette.
 
-Defining this option will also change the entrypoint from `sqlite3_lines_init` to `sqlite3_linesnofs_init`, because the compiled loadable extension for this option is named `./lines_nofs0` instead of `./lines0`.
+**`SQLITE_LINES_ENTRYPOINT`** - optionally change the entrypoint name from `sqlite3_lines_init` to something else. This is used in the loadable "no filesystem" version of `sqlite-lines`, which uses `sqlite3_linesnofs_init` instead (because the compiled extension name is `lines_nofs0`).
 
 ## API Reference
 
