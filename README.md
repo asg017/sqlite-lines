@@ -4,18 +4,18 @@
 
 <img src="./benchmarks/calc.png" alt="Benchmark between sqlite-lines and various other data processing tools" width="600"/>
 
-See [Benchmarks](./benchmarks) for more info.
+<small>See [Benchmarks](./benchmarks) for more info.</small>
+
+## Usage
 
 ```sql
 .load ./lines0
 select line from lines_read('logs.txt');
 ```
 
-`sqlite-lines` is great for line-oriented datasets, like [ndjson](https://ndjson.org/) or [JSON Lines](https://jsonlines.org/), when paired with SQLite's [JSON support](https://www.sqlite.org/json1.html).
+`sqlite-lines` is great for line-oriented datasets, like [ndjson](https://ndjson.org/) or [JSON Lines](https://jsonlines.org/), when paired with SQLite's [JSON support](https://www.sqlite.org/json1.html). Here, we calculate the top 5 country participants in Google's [Quick, Draw!](https://quickdraw.withgoogle.com/data) dataset for [`calendars.ndjson`](https://storage.googleapis.com/quickdraw_dataset/full/simplified/calendar.ndjson):
 
 ```sql
--- downloaded from https://storage.googleapis.com/quickdraw_dataset/full/simplified/calendar.ndjson
-
 select
   line ->> '$.countrycode' as countrycode,
   count(*)
@@ -43,7 +43,7 @@ select
   name as file,
   lines.rowid as line_number,
   line
-from fsdir("logs")
+from fsdir('logs')
 join lines_read(name) as lines
 where name like '%.txt';
 /*
@@ -72,23 +72,29 @@ The [Releases page](https://github.com/asg017/sqlite-lines/releases) contains pr
 
 If you want to use `sqlite-lines` as a [Runtime-loadable extension](https://www.sqlite.org/loadext.html), Download the `lines0.dylib` (for MacOS) or `lines0.so` file from a release and load it into your SQLite environment.
 
+> **Note:**
+> The `0` in the filename (`lines0.dylib` or `lines0.so`) denotes the major version of `sqlite-lines`. Currently `sqlite-lines` is pre v1, so expect breaking changes in future versions.
+
 For example, if you are using the [SQLite CLI](https://www.sqlite.org/cli.html), you can load the library like so:
 
 ```sql
 .load ./lines0
 select lines_version();
--- v0.0.0
+-- v0.0.1
 ```
 
 Or in Python, using the builtin [sqlite3 module](https://docs.python.org/3/library/sqlite3.html):
 
 ```python
 import sqlite3
+
 con = sqlite3.connect(":memory:")
+
 con.enable_load_extension(True)
 con.load_extension("./lines0")
+
 print(con.execute("select lines_version()").fetchone())
-# ('v0.0.0',)
+# ('v0.0.1',)
 ```
 
 Or in Node.js using [better-sqlite3](https://github.com/WiseLibs/better-sqlite3):
@@ -96,9 +102,11 @@ Or in Node.js using [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
 ```javascript
 const Database = require("better-sqlite3");
 const db = new Database(":memory:");
+
 db.loadExtension("./lines0");
+
 console.log(db.prepare("select lines_version()").get());
-// { 'lines_version()': 'v0.0.0' }
+// { 'lines_version()': 'v0.0.1' }
 ```
 
 Or with [Datasette](https://datasette.io/) (using the "no filesystem" version to limit security vulnerabilities):
@@ -106,8 +114,6 @@ Or with [Datasette](https://datasette.io/) (using the "no filesystem" version to
 ```
 datasette data.db --load-extension ./lines_nofs0
 ```
-
-The `0` in the filename (`lines0.dylib` or `lines0.so`) denotes the major version of `sqlite-lines`. Currently `sqlite-lines` is pre v1, so expect breaking changes in future versions.
 
 Windows is not supported - [yet](https://github.com/asg017/sqlite-lines/issues/4)!
 

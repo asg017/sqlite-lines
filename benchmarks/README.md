@@ -25,9 +25,7 @@ Version: v1.0.0
 
 ## CAVEAT: BENCHMARKS ARE HARD
 
-These aren't
-
-Instead, these are some real-life cases where I found a need for a line-oriented or NDJSON parser, and I reached for the most familar and easiest CLI-based tools to make a comparison.
+These aren't 100% conclusive "sqlite-lines is the fastest" benchmarks. Instead, these are some real-life cases where I found a need for a line-oriented or NDJSON parser, and I reached for the most familar and easiest CLI-based tools to make a comparison.
 
 If you think these are incomplete, or I'm mis-using one of these tools, or there's another tools that isn't included, file an issue.
 
@@ -41,17 +39,7 @@ If you think these are incomplete, or I'm mis-using one of these tools, or there
 
 **Commentary:** The [`py.sh`](./calc/py.sh) script is a good baseline for a problem like this: Use Python's `for line in file`, parse as JSON, and keep a running total, quick and easy, takes about 5 seconds. [`ndjson-cli`](https://github.com/mbostock/ndjson-cli) adds another straightforward baseline, based in Node.js. "Helper" data processing CLI tools like [`dsq`](https://github.com/multiprocessio/dsq), [`sqlite-utils`](https://sqlite-utils.datasette.io/en/stable/), and [`zq`](https://www.brimdata.io/blog/introducing-zq/) sacrifice speed in exchange for simplicity. Pandas just completely chokes on large NDJSON files.
 
-`sqlite-lines` and `duckdb`, however, perform extremely well with this. [DuckDB](https://duckdb.org/)'s new [`read_json_object`](https://github.com/duckdb/duckdb/pull/3435) TODO. `sqlite-lines` is essentially a light wrapper around [`getdelim()`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getdelim.html), and [SQLite's JSON support](https://www.sqlite.org/json1.html) claims processing speed of "over 1 GB/s", making `sqlite-lines` one of the fastest and most complete NDJSON tools.
-
-### Count number of NDJSON objects in a file
-
-**Goal:** Simply count the number of lines in a file, which is the same as the number of "objects" in a NDJSON file.
-
-![](./count-ndjson.png)
-
-**Commentary:** This isn't the fairest comparison: `ndjson-cli`, `dsq`, and `sqlite-utils` parses each individual line as JSON while the others only perform a simple line count, so those are artificially high. The simple `wc -l` performs the fastest out of all tools. However, if you wanted to do some filtering on some fields before counting, such as "only count `countrycode=US` objects", this `wc -l` alone won't work.
-
-Another note: I'm not sure why DuckdB was so much slower in this specific case.
+`sqlite-lines` and `duckdb`, however, perform extremely well with this. [DuckDB](https://duckdb.org/)'s new [`read_json_object`](https://github.com/duckdb/duckdb/pull/3435) performs extremely well with large datasets. `sqlite-lines`, on the other hand, is essentially a light wrapper around [`getdelim()`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getdelim.html), and [SQLite's JSON support](https://www.sqlite.org/json1.html) claims processing speed of "over 1 GB/s", making `sqlite-lines` one of the fastest and most complete NDJSON tools.
 
 ### "Large" 5GB+ NDJSON Parsing
 
@@ -59,7 +47,7 @@ Another note: I'm not sure why DuckdB was so much slower in this specific case.
 
 ![](./big-calc.png)
 
-**Commentary:** `sqlite-lines` holds its weight and even beats out DuckDB, though I imagine a future release of DuckDB may come with faster JSON parsing.
+**Commentary:** `sqlite-lines` holds its weight with larger datasets. Since `lines_read()` doesn't read the entire file into memory, it gets around the [maximum 1GB blob SQLite limit](https://www.sqlite.org/limits.html), allowing you to work on larger datasets. Other tools were left out of this benchmark since they simply took too long (and might fail after running out of memory).
 
 ### Count all `sh*` words in `/usr/share/dict/words`
 
@@ -75,4 +63,8 @@ Another note: I'm not sure why DuckdB was so much slower in this specific case.
 
 ![](./draw-insert.png)
 
-**Commentary:** `sqlite-utils` isn't really built for speed, but this clearly shows that `sqlite-lines` is an extremely fast and robust tool for working with NDJSON objects.
+**Commentary:** Since the other tests involved only reading in data, this tests shows that `sqlite-lines` can also be used to transform NDJSON/line-oriented data and insert into a SQLite database.
+
+`sqlite-utils` is quite slow for a number of reasons (written in Python, running multiple SQL commands instead of one, switching between Python <-> SQLite), but you may prefer the simple CLI over plain SQL.
+
+DuckDB can also write the results of `json_read_objects` to a DuckDB table, but it's a completely different file format than SQLite's and isn't comparable. DuckDB will [automatically create indicies](https://duckdb.org/docs/sql/indexes) for all columns in a table, making future analytical queries much faster. In SQLite you'd have to [manually create them](https://www.sqlite.org/lang_createindex.html), and that amount of time would probably be equivalent to the extra time DuckDB takes<sup>[citation needed]</sup>.

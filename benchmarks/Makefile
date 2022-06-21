@@ -7,7 +7,7 @@ big-calc.png: ./big-calc/results.json
 		--redefine-file=data:json:./big-calc/results.json \
 		--redefine-file=highlight:json:<(echo '["./sqlite-lines.sh"]') \
 		'--redefine=compareTo:./sqlite-lines.sh' \
-		'--redefine=title:Aggregate a 5.4GB NDJSON file with 18M objects' \
+		'--redefine=title:Read a 5.4GB NDJSON file with 18M objects' \
 		'--redefine=footer:sqlite-lines v0.0.1 on a DigitalOcean Droplet, 8GB of RAM' \
 		-o $@
 
@@ -29,7 +29,7 @@ calc.png: ./calc/results.json
 		--redefine-file=data:json:$< \
 		--redefine-file=highlight:json:<(echo '["./sqlite-lines.sh"]') \
 		'--redefine=compareTo:./sqlite-lines.sh' \
-		'--redefine=title:Aggregate a 185MB NDJSON file with 321k objects' \
+		'--redefine=title:Read a 185MB NDJSON file with 321k objects' \
 		'--redefine=footer:sqlite-lines v0.0.1 on a DigitalOcean Droplet, 8GB of RAM' \
 		-o $@
 
