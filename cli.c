@@ -1,4 +1,4 @@
-#include "lines.h"
+#include "sqlite-lines.h"
 #include <sqlite3.h>
 #include <stdio.h>
 #include <unistd.h>

@@ -38,7 +38,7 @@ all: $(TARGET_PACKAGE) $(TARGET_SQLJS)
 clean:
 	rm dist/*
 
-FORMAT_FILES=lines.h lines.c cli.c core_init.c
+FORMAT_FILES=sqlite-lines.h sqlite-lines.c cli.c core_init.c
 format: $(FORMAT_FILES)
 	clang-format -i $(FORMAT_FILES)
 
@@ -47,39 +47,39 @@ cli: $(TARGET_CLI)
 sqlite3: $(TARGET_SQLITE3)
 sqljs: $(TARGET_SQLJS)
 fuzz:
-	clang -g -O1 -fsanitize=fuzzer -I./ -I./sqlite $(DEFINE_SQLITE_LINES) lines.c
+	clang -g -O1 -fsanitize=fuzzer -I./ -I./sqlite $(DEFINE_SQLITE_LINES) sqlite-lines.c
 
-$(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
-	zip --junk-paths $@ $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) lines.h lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
+$(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) sqlite-lines.h sqlite-lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
+	zip --junk-paths $@ $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) sqlite-lines.h sqlite-lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
 
-$(TARGET_LOADABLE): lines.c
+$(TARGET_LOADABLE): sqlite-lines.c
 	gcc -Isqlite \
 	$(LOADABLE_CFLAGS) \
 	$(DEFINE_SQLITE_LINES) \
 	$< -o $@
 
-$(TARGET_LOADABLE_NOFS): lines.c
+$(TARGET_LOADABLE_NOFS): sqlite-lines.c
 	gcc -Isqlite \
 	$(LOADABLE_CFLAGS) \
 	$(DEFINE_SQLITE_LINES) -DSQLITE_LINES_DISABLE_FILESYSTEM \
 	$< -o $@
 
-$(TARGET_CLI): cli.c lines.c dist/sqlite3-extra.c sqlite/shell.c 
+$(TARGET_CLI): cli.c sqlite-lines.c dist/sqlite3-extra.c sqlite/shell.c 
 	gcc -O3 \
 	 $(DEFINE_SQLITE_LINES) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-I./ -Isqlite \
 	sqlite/sqlite3.c \
-	cli.c lines.c -o $@
+	cli.c sqlite-lines.c -o $@
 
-$(TARGET_SQLITE3): dist/sqlite3-extra.c sqlite/shell.c lines.c
+$(TARGET_SQLITE3): dist/sqlite3-extra.c sqlite/shell.c sqlite-lines.c
 	gcc \
 	$(DEFINE_SQLITE_LINES) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-DSQLITE_EXTRA_INIT=core_init \
-	-I./ -I./sqlite dist/sqlite3-extra.c sqlite/shell.c lines.c -o $@
+	-I./ -I./sqlite dist/sqlite3-extra.c sqlite/shell.c sqlite-lines.c -o $@
 
-$(TARGET_OBJ): lines.c lines.h
+$(TARGET_OBJ): sqlite-lines.c sqlite-lines.h
 	gcc -Isqlite \
 	-c \
 	$(DEFINE_SQLITE_LINES) \
@@ -119,10 +119,10 @@ test-sqljs: $(TARGET_SQLJS)
 	python3 -m http.server & open http://localhost:8000/tests/test-sqljs.html
 
 test-watch:
-	watchexec -w lines.c -w tests/ -w tests/ --clear make test
+	watchexec -w sqlite-lines.c -w tests/ -w tests/ --clear make test
 
 test-loadable-watch: $(TARGET_LOADABLE)
-	watchexec -w lines.c -w $(TARGET_LOADABLE) -w tests/test-loadable.py --clear -- make test-loadable
+	watchexec -w sqlite-lines.c -w $(TARGET_LOADABLE) -w tests/test-loadable.py --clear -- make test-loadable
 
 test-cli-watch: $(TARGET_CLI) tests/test-cli.py
 	watchexec -w cli.c -w dist/sqlite-lines -w tests/test-cli.py --clear -- make test-cli
@@ -175,9 +175,9 @@ SQLJS_EMFLAGS_DEBUG = \
 	-s ASSERTIONS=1 \
 	-O1
 
-$(TARGET_SQLJS): $(shell find wasm/ -type f) lines.c dist/sqlite3-extra.c
+$(TARGET_SQLJS): $(shell find wasm/ -type f) sqlite-lines.c dist/sqlite3-extra.c
 	emcc $(SQLJS_CFLAGS) $(SQLJS_EMFLAGS) $(SQLJS_EMFLAGS_DEBUG) $(SQLJS_EMFLAGS_WASM) \
-		-I./sqlite -I./ lines.c dist/sqlite3-extra.c \
+		-I./sqlite -I./ sqlite-lines.c dist/sqlite3-extra.c \
 		--pre-js wasm/api.js \
 		-o $(TARGET_SQLJS_JS)
 	mv $(TARGET_SQLJS_JS) tmp.js

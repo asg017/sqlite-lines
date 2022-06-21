@@ -3,7 +3,7 @@
   file to include sqlite3_lines functions/tables statically in
   a build. This is used for the demo CLI and WASM implementations.
 */
-#include "lines.h"
+#include "sqlite-lines.h"
 int core_init(const char *dummy) {
   return sqlite3_auto_extension((void *)
 #ifdef SQLITE_LINES_DISABLE_FILESYSTEM

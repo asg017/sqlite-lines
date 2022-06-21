@@ -60,7 +60,7 @@ make test-sqljs
 
 #### Building into your own application
 
-You have a few options. You only really need the `lines.h` and `lines.c`, so you could copy+paste those files into your own C/C++ application and bundle like that.
+You have a few options. You only really need the `sqlite-lines.h` and `sqlite-lines.c`, so you could copy+paste those files into your own C/C++ application and bundle like that.
 
 Additionally, you can run `make dist/lines0.o` to create an object file, and use that to link to your application.
 
