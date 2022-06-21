@@ -33,17 +33,6 @@ int main(int argc, char *argv[]) {
   }
 
   char *file = "/dev/stdin";
-  /*while ((opt = getopt(argc, argv, "i:")) != -1) {
-    switch (opt) {
-      case 'i':
-        file = optarg;
-        break;
-      default:
-        fprintf(stderr, "Usage: %s [-t nsecs] [-n] name\n",argv[0]);
-        return 1;
-    }
-  }*/
-
   rc = sqlite3_open(":memory:", &db);
 
   if (rc != SQLITE_OK) {
