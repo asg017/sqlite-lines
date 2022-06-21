@@ -70,7 +70,7 @@ $(TARGET_CLI): cli.c lines.c dist/sqlite3-extra.c sqlite/shell.c
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
 	-I./ -Isqlite \
 	sqlite/sqlite3.c \
-	cli.c dist/sqlite3-extra.c sqlite/shell.c lines.c -o $@
+	cli.c lines.c -o $@
 
 $(TARGET_SQLITE3): dist/sqlite3-extra.c sqlite/shell.c lines.c
 	gcc \

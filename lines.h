@@ -1,3 +1,5 @@
+#include "sqlite3ext.h"
+
 #ifdef SQLITE_LINES_DISABLE_FILESYSTEM
 int sqlite3_linesnofs_init(
 #else
