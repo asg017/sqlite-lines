@@ -1,7 +1,7 @@
 <meta charset="utf8" />
 <html>
   <body>
-    <div id="results">❌ test(s) failed, check console</div>
+    <div id="results">⏳ Running tests...</div>
   </body>
   <script src="../dist/sqljs.js"></script>
   <script type="module">
@@ -55,25 +55,30 @@
             </table>
           </div>`);
       }
-      printResults(
-        `select name 
+      try {
+        printResults(
+          `select name 
 from pragma_function_list 
 where name like 'lines%'`
-      );
-      printResults(
-        `select name 
+        );
+        printResults(
+          `select name 
 from pragma_module_list 
 where name like 'lines%'`
-      );
-      printResults("select lines_version(), lines_debug()");
+        );
+        printResults("select lines_version(), lines_debug()");
 
-      printResults(
-        `select 
+        printResults(
+          `select 
   rowid, 
   line 
 from lines('a|b|c|d|e', '|')`
-      );
-      document.querySelector("#results").innerText = "✅ tests passed";
+        );
+        document.querySelector("#results").innerText = "✅ tests passed";
+      } catch {
+        document.querySelector("#results").innerText =
+          "❌ test(s) failed, check console";
+      }
     });
   </script>
 </html>
