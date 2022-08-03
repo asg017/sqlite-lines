@@ -121,7 +121,7 @@ Windows is not supported - [yet](https://github.com/asg017/sqlite-lines/issues/4
 
 `sqlite-lines` is also distributed as a standalone [SQL.js](https://github.com/sql-js/sql.js) library. It's essentially a fork of the original SQL.js library, with the addition of `sqlite-lines` functions like `lines_version()` and `lines()`.
 
-Check out [this Observable notebook](https://observablehq.com/@asg017/sqlite-lines-wasm) for the full demonstration. The [Releases page](https://github.com/asg017/sqlite-lines/releases) contains the JavaScript and WASM files.
+Check out [this Observable notebook](https://observablehq.com/@asg017/introducing-sqlite-lines) for the full demonstration. The [Releases page](https://github.com/asg017/sqlite-lines/releases) contains the JavaScript and WASM files.
 
 ### The sqlite-lines CLI
 
