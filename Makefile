@@ -51,6 +51,7 @@ $(TARGET_PACKAGE): $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) sqli
 	zip --junk-paths $@ $(TARGET_LOADABLE) $(TARGET_LOADABLE_NOFS) $(TARGET_OBJ) sqlite-lines.h sqlite-lines.c $(TARGET_SQLITE3) $(TARGET_CLI)
 
 $(TARGET_LOADABLE): sqlite-lines.c
+	mkdir -p dist
 	gcc -Isqlite \
 	$(LOADABLE_CFLAGS) \
 	$(DEFINE_SQLITE_LINES) \
