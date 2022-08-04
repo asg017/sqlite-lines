@@ -8,6 +8,8 @@ SQLITE_EXTENSION_INIT1
 #include <stdlib.h>
 #include <string.h>
 
+#pragma region sqlite-lines meta scalar functions
+
 // TODO is this deterministic?
 static void linesVersionFunc(sqlite3_context *context, int argc,
                              sqlite3_value **argv) {
@@ -31,6 +33,10 @@ static void linesDebugFunc(sqlite3_context *context, int argc,
   sqlite3_result_text(context, debug, -1, SQLITE_TRANSIENT);
   sqlite3_free((void *)debug);
 }
+
+#pragma endregion
+
+#pragma region lines() and lines_read() table functions
 
 typedef struct lines_cursor lines_cursor;
 struct lines_cursor {
@@ -538,6 +544,10 @@ static sqlite3_module linesReadModule = {
 };
 #endif
 
+#pragma endregion
+
+#pragma region entry points
+
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
@@ -570,3 +580,5 @@ int sqlite3_lines_init(
 #endif
   return rc;
 }
+
+#pragma endregion
