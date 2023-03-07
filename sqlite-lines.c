@@ -418,6 +418,11 @@ static int linesReadFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
       break;
     }
     case LINES_IDXSTR_PATH: {
+      if(sqlite3_value_type(argv[i]) == SQLITE_NULL) {
+        pVtabCursor->pVtab->zErrMsg =
+            sqlite3_mprintf("path is null");
+        return SQLITE_ERROR;
+      }
       char *path = (char *)sqlite3_value_text(argv[i]);
       // TODO should we free this later?
       pCur->in = (char *)path;
