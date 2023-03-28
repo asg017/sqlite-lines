@@ -46,6 +46,8 @@ jobs:
       - run: cp dist/lines0.so npm/sqlite-lines-linux-x64/lib
       - run: pip3 install --find-links dist/ sqlite_lines
       - run: make test-loadable
+        env:
+          ENV: CI
       - run: make test-python
       # for test-npm
       - uses: actions/setup-node@v3
@@ -113,6 +115,8 @@ jobs:
       - run: brew install python
       - run: /usr/local/opt/python@3/libexec/bin/pip install --find-links dist/ sqlite_lines
       - run: make test-loadable python=/usr/local/opt/python@3/libexec/bin/python
+        env:
+          ENV: CI
       - run: make test-python python=/usr/local/opt/python@3/libexec/bin/python
       # for test-npm
       - uses: actions/setup-node@v3
@@ -183,3 +187,5 @@ jobs:
           path: dist/
       - run: pip install --find-links dist/ sqlite_lines
       - run: make test-loadable
+        env:
+          ENV: CI
