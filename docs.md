@@ -66,11 +66,7 @@ Additionally, you can run `make dist/lines0.o` to create an object file, and use
 
 If you want to load `sqlite-lines` functions/tables into a SQLite connection by default, look into the [`sqlite3_auto_extension()`](https://www.sqlite.org/c3ref/auto_extension.html) API and the `SQLITE_EXTRA_INIT` SQLite compile-time option (this project's Makefile has a few examples).
 
-#### Compile-time options
-
-**`SQLITE_LINES_DISABLE_FILESYSTEM`** an option that removes the `lines_read()` table function from the compiled output. This is the sole `sqlite-lines` function that touches the file system (because `lines()` only deals with in-memory data), which can be a security issue if you're running SQL queries from untrusted sources, like with Datasette.
-
-**`SQLITE_LINES_ENTRYPOINT`** - optionally change the entrypoint name from `sqlite3_lines_init` to something else. This is used in the loadable "no filesystem" version of `sqlite-lines`, which uses `sqlite3_linesnofs_init` instead (because the compiled extension name is `lines_nofs0`).
+#### Entrypoints
 
 ## API Reference
 

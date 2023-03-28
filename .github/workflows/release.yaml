@@ -1,4 +1,4 @@
-name: "build"
+name: "release"
 on:
   release:
     types: [published]
@@ -6,67 +6,101 @@ on:
 permissions:
   contents: read
 jobs:
-  build-macos:
-    name: Build for MacOS
+  build-linux_x86-extension:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: make loadable
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86
+          path: dist/lines0.so
+  build-linux_x86-python:
+    runs-on: ubuntu-20.04
+    needs: [build-linux_x86-extension]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86
+          path: dist/
+      - uses: actions/setup-python@v3
+      - run: pip install wheel
+      - run: make python
+      - run: make datasette
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86-wheels
+          path: dist/wheels/*.whl
+
+  build-macos-extension:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build
-        env:
-          ENV: CI
-        run: |
-          mkdir -p dist/
-          make -j 4 dist/package.zip
-          make test
-      - name: Upload dist as artifact
-        uses: actions/upload-artifact@v2
+
+      - run: make loadable
+      - uses: actions/upload-artifact@v3
         with:
-          name: lines0-darwin-amd64
-          path: dist
-  build-linux:
-    name: Build for Linux
-    runs-on: ubuntu-latest
+          name: sqlite-lines-macos
+          path: dist/lines0.dylib
+  build-macos-python:
+    runs-on: macos-latest
+    needs: [build-macos-extension]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-macos
+          path: dist/
+      - uses: actions/setup-python@v3
+      - run: pip install wheel
+      - run: make python
+      - run: make datasette
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-macos-wheels
+          path: dist/wheels/*.whl
+
+  build-windows-extension:
+    name: Building windows extension
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build
-        env:
-          ENV: CI
-        run: |
-          mkdir -p dist/
-          make -j 4 dist/package.zip
-          make test
-      - name: Upload dist as artifact
-        uses: actions/upload-artifact@v2
+
+      - run: make loadable
+      - uses: actions/upload-artifact@v3
         with:
-          name: lines0-linux-amd64
-          path: dist
-  build-sqljs:
-    name: Build for SQL.JS/WASM
-    runs-on: ubuntu-latest
+          name: sqlite-lines-windows
+          path: dist/lines0.dll
+  build-windows-python:
+    runs-on: windows-latest
+    needs: [build-windows-extension]
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup emsdk
-        uses: mymindstorm/setup-emsdk@v11
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v3
         with:
-          version: 3.1.5
-          actions-cache-folder: "emsdk-cache"
-      - name: Verify
-        run: emcc -v
-      - run: |
-          mkdir -p dist/
-          make sqljs
-      - uses: actions/upload-artifact@v2
+          name: sqlite-lines-windows
+          path: dist/
+      - uses: actions/setup-python@v3
+      - run: pip install wheel
+      - run: make python
+      - run: make datasette
+      - uses: actions/upload-artifact@v3
         with:
-          name: lines0-sqljs
-          path: dist/sqljs.js
-      - uses: actions/upload-artifact@v2
-        with:
-          name: lines0-sqljs
-          path: dist/sqljs.wasm
-  release:
-    name: "releases"
-    if: ${{ github.event_name == 'release' }}
-    needs: [build-macos, build-linux, build-sqljs]
+          name: sqlite-lines-windows-wheels
+          path: dist/wheels/*.whl
+  upload-extensions:
+    name: Upload release assets
+    needs:
+      [
+        build-macos-extension,
+        build-linux_x86-extension,
+        build-windows-extension,
+      ]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -74,9 +108,92 @@ jobs:
       - uses: actions/checkout@v2
       - name: Download workflow artifacts
         uses: actions/download-artifact@v2
+      - run: npm install tar-fs
       - uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const script = require('.github/workflows/release.js')
+            const script = require('.github/workflows/upload.js')
             await script({github, context})
+  upload-deno:
+    name: Upload Deno release assets
+    needs:
+      [
+        build-macos-extension,
+        build-linux_x86-extension,
+        build-windows-extension,
+      ]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v2
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const script = require('.github/workflows/upload-deno-assets.js')
+            await script({github, context})
+  upload-npm:
+    needs:
+      [
+        build-macos-extension,
+        build-linux_x86-extension,
+        build-windows-extension,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v2
+      - run: |
+          cp sqlite-lines-linux_x86/lines0.so npm/sqlite-lines-linux-x64/lib/lines0.so
+          cp sqlite-lines-macos/lines0.dylib npm/sqlite-lines-darwin-x64/lib/lines0.dylib
+          cp sqlite-lines-windows/lines0.dll npm/sqlite-lines-windows-x64/lib/lines0.dll
+      - name: Install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          registry-url: "https://registry.npmjs.org"
+      - name: Publish NPM sqlite-lines-linux-x64
+        working-directory: npm/sqlite-lines-linux-x64
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish NPM sqlite-lines-darwin-x64
+        working-directory: npm/sqlite-lines-darwin-x64
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish NPM sqlite-lines-windows-x64
+        working-directory: npm/sqlite-lines-windows-x64
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish NPM sqlite-lines
+        working-directory: npm/sqlite-lines
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  upload_pypi:
+    needs: [build-linux_x86-python, build-macos-python, build-windows-python]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-windows-wheels
+          path: dist
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86-wheels
+          path: dist
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-macos-wheels
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip_existing: true

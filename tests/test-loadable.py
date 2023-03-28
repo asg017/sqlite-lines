@@ -4,7 +4,6 @@ import time
 import os
 
 EXT_PATH="./dist/lines0"
-EXT_NOFS_PATH="./dist/lines_nofs0"
 
 def connect(ext):
   db = sqlite3.connect(":memory:")
@@ -23,7 +22,6 @@ def connect(ext):
 
 
 db = connect(EXT_PATH)
-db_nofs = connect(EXT_NOFS_PATH)
 
 def explain_query_plan(sql):
   return db.execute("explain query plan " + sql).fetchone()["detail"]
@@ -50,28 +48,21 @@ class TestLines(unittest.TestCase):
   def test_modules(self):
     modules = list(map(lambda a: a[0], db.execute("select name from loaded_modules").fetchall()))
     self.assertEqual(modules, MODULES)
-
-    modules_nofs = list(map(lambda a: a[0], db_nofs.execute("select name from loaded_modules").fetchall()))
-    self.assertEqual(modules_nofs, [
-      "lines",
-    ])
     
   def test_lines_version(self):
     with open("./VERSION") as f:
-      version = f.read()
+      version = 'v' + f.read()
     
     self.assertEqual(db.execute("select lines_version()").fetchone()[0], version)
 
   def test_lines_debug(self):
     debug = db.execute("select lines_debug()").fetchone()[0].split('\n')
-    debug_nofs = db_nofs.execute("select lines_debug()").fetchone()[0].split('\n')
     self.assertEqual(len(debug), 3)
-    self.assertEqual(len(debug_nofs), 4)
 
     self.assertTrue(debug[0].startswith("Version: v"))
     self.assertTrue(debug[1].startswith("Date: "))
     self.assertTrue(debug[2].startswith("Source: "))
-    self.assertTrue(debug_nofs[3] == "NO FILESYSTEM")
+    #self.assertTrue(debug_nofs[3] == "NO FILESYSTEM")
   
   def test_lines(self):
     self.assertEqual(execute_all("select rowid, delimiter, document, line from lines(?)", ["a\nb"]), [

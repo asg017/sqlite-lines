@@ -8,30 +8,18 @@ SQLITE_EXTENSION_INIT1
 #include <stdlib.h>
 #include <string.h>
 
-#pragma region sqlite-lines meta scalar functions
+#pragma region sqlite - lines meta scalar functions
 
 // TODO is this deterministic?
 static void linesVersionFunc(sqlite3_context *context, int argc,
                              sqlite3_value **argv) {
-  sqlite3_result_text(context, SQLITE_LINES_VERSION, -1, SQLITE_STATIC);
+  sqlite3_result_text(context, sqlite3_user_data(context), -1, SQLITE_STATIC);
 }
 
 // TODO is this deterministic?
 static void linesDebugFunc(sqlite3_context *context, int argc,
                            sqlite3_value **arg) {
-  const char *debug = sqlite3_mprintf(
-#ifdef SQLITE_LINES_DISABLE_FILESYSTEM
-      "Version: %s\nDate: %s\nSource: %s\nNO FILESYSTEM",
-#else
-      "Version: %s\nDate: %s\nSource: %s",
-#endif
-      SQLITE_LINES_VERSION, SQLITE_LINES_DATE, SQLITE_LINES_SOURCE);
-  if (debug == NULL) {
-    sqlite3_result_error_nomem(context);
-    return;
-  }
-  sqlite3_result_text(context, debug, -1, SQLITE_TRANSIENT);
-  sqlite3_free((void *)debug);
+  sqlite3_result_text(context, sqlite3_user_data(context), -1, SQLITE_STATIC);
 }
 
 #pragma endregion
@@ -398,7 +386,6 @@ static int linesFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
   return SQLITE_OK;
 }
 
-#ifndef SQLITE_LINES_DISABLE_FILESYSTEM
 static int linesReadFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
                            const char *idxStr, int argc, sqlite3_value **argv) {
   int targetRowid;
@@ -418,9 +405,8 @@ static int linesReadFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
       break;
     }
     case LINES_IDXSTR_PATH: {
-      if(sqlite3_value_type(argv[i]) == SQLITE_NULL) {
-        pVtabCursor->pVtab->zErrMsg =
-            sqlite3_mprintf("path is null");
+      if (sqlite3_value_type(argv[i]) == SQLITE_NULL) {
+        pVtabCursor->pVtab->zErrMsg = sqlite3_mprintf("path is null");
         return SQLITE_ERROR;
       }
       char *path = (char *)sqlite3_value_text(argv[i]);
@@ -491,7 +477,6 @@ static int linesReadConnect(sqlite3 *db, void *pUnused, int argcUnused,
   }
   return rc;
 }
-#endif
 
 static sqlite3_module linesModule = {
     0,               /* iVersion */
@@ -520,7 +505,6 @@ static sqlite3_module linesModule = {
     0                /* xShadowName */
 };
 
-#ifndef SQLITE_LINES_DISABLE_FILESYSTEM
 static sqlite3_module linesReadModule = {
     0,                /* iVersion */
     0,                /* xCreate */
@@ -547,7 +531,6 @@ static sqlite3_module linesReadModule = {
     0,                /* xRollbackTo */
     0                 /* xShadowName */
 };
-#endif
 
 #pragma endregion
 
@@ -556,33 +539,57 @@ static sqlite3_module linesReadModule = {
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-#ifdef SQLITE_LINES_ENTRYPOINT
-    int SQLITE_LINES_ENTRYPOINT(
-#else
-int sqlite3_lines_init(
-#endif
-        sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi) {
+    int sqlite3_lines_init(sqlite3 *db, char **pzErrMsg,
+                           const sqlite3_api_routines *pApi) {
   int rc = SQLITE_OK;
   SQLITE_EXTENSION_INIT2(pApi);
 
   (void)pzErrMsg; /* Unused parameter */
+  int flags = SQLITE_UTF8 | SQLITE_INNOCUOUS | SQLITE_DETERMINISTIC;
+  const char *debug = sqlite3_mprintf(
+      "Version: %s\nDate: %s\nSource: %s", SQLITE_LINES_VERSION,
+      SQLITE_LINES_DATE, SQLITE_LINES_SOURCE);
+
   if (rc == SQLITE_OK)
-    rc = sqlite3_create_function(db, "lines_version", 0,
-                                 SQLITE_UTF8 | SQLITE_INNOCUOUS |
-                                     SQLITE_DETERMINISTIC,
-                                 0, linesVersionFunc, 0, 0);
+    rc = sqlite3_create_function_v2(db, "lines_version", 0, flags,
+                                    (void *)SQLITE_LINES_VERSION,
+                                    linesVersionFunc, 0, 0, 0);
   if (rc == SQLITE_OK)
-    rc = sqlite3_create_function(db, "lines_debug", 0,
-                                 SQLITE_UTF8 | SQLITE_INNOCUOUS |
-                                     SQLITE_DETERMINISTIC,
-                                 0, linesDebugFunc, 0, 0);
+    rc = sqlite3_create_function_v2(db, "lines_debug", 0, flags, (void *)debug,
+                                    linesDebugFunc, 0, 0, sqlite3_free);
 
   if (rc == SQLITE_OK)
     rc = sqlite3_create_module(db, "lines", &linesModule, 0);
-#ifndef SQLITE_LINES_DISABLE_FILESYSTEM
   if (rc == SQLITE_OK)
     rc = sqlite3_create_module(db, "lines_read", &linesReadModule, 0);
+  return rc;
+}
+
+#ifdef _WIN32
+__declspec(dllexport)
 #endif
+    int sqlite3_lines_no_read_init(sqlite3 *db, char **pzErrMsg,
+                                   const sqlite3_api_routines *pApi) {
+  int rc = SQLITE_OK;
+  SQLITE_EXTENSION_INIT2(pApi);
+
+  (void)pzErrMsg; /* Unused parameter */
+  int flags = SQLITE_UTF8 | SQLITE_INNOCUOUS | SQLITE_DETERMINISTIC;
+
+  const char *debug = sqlite3_mprintf(
+      "Version: %s\nDate: %s\nSource: %s\nNO FILESYSTEM", SQLITE_LINES_VERSION,
+      SQLITE_LINES_DATE, SQLITE_LINES_SOURCE);
+
+  if (rc == SQLITE_OK)
+    rc = sqlite3_create_function_v2(db, "lines_version", 0, flags,
+                                    (void *)SQLITE_LINES_VERSION,
+                                    linesVersionFunc, 0, 0, 0);
+  if (rc == SQLITE_OK)
+    rc = sqlite3_create_function_v2(db, "lines_debug", 0, flags, (void *)debug,
+                                    linesDebugFunc, 0, 0, sqlite3_free);
+
+  if (rc == SQLITE_OK)
+    rc = sqlite3_create_module(db, "lines", &linesModule, 0);
   return rc;
 }
 

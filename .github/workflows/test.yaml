@@ -1,33 +1,185 @@
-name: "build"
-on:
-  push:
-    tags:
-      - v*
-  pull_request:
-permissions:
-  contents: read
+on: [push]
+name: "test"
 jobs:
-  test-macos:
-    name: Test on MacOS
+  build-linux_x86-extension:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: make loadable
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86
+          path: dist/lines0.so
+  build-linux_x86-python:
+    runs-on: ubuntu-20.04
+    needs: [build-linux_x86-extension]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86
+          path: dist/
+      - uses: actions/setup-python@v3
+      - run: pip install wheel
+      - run: make python
+      - run: make datasette
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86-wheels
+          path: dist/wheels/*.whl
+  test-linux_x86:
+    runs-on: ubuntu-20.04
+    needs: [build-linux_x86-extension, build-linux_x86-python]
+    env:
+      DENO_DIR: deno_cache
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86
+          path: dist/
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-linux_x86-wheels
+          path: dist/
+      - run: cp dist/lines0.so npm/sqlite-lines-linux-x64/lib
+      - run: pip3 install --find-links dist/ sqlite_lines
+      - run: make test-loadable
+      - run: make test-python
+      # for test-npm
+      - uses: actions/setup-node@v3
+        with:
+          cache: "npm"
+          cache-dependency-path: npm/sqlite-lines/package.json
+      - run: npm install
+        working-directory: npm/sqlite-lines
+      - run: make test-npm
+      # for test-deno
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.30
+      - name: Cache Deno dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ runner.os }}-${{ hashFiles('deno/deno.lock') }}
+      - run: make test-deno
+        env:
+          DENO_SQLITE_LINES_PATH: ${{ github.workspace }}/dist/lines0
+  build-macos-extension:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build + Test
+      - run: make loadable
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-macos
+          path: dist/lines0.dylib
+  build-macos-python:
+    runs-on: macos-latest
+    needs: [build-macos-extension]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-macos
+          path: dist/
+      - uses: actions/setup-python@v3
+      - run: pip install wheel
+      - run: make python
+      - run: make datasette
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-macos-wheels
+          path: dist/wheels/*.whl
+  test-macos:
+    runs-on: macos-latest
+    needs: [build-macos-extension, build-macos-python]
+    env:
+      DENO_DIR: deno_cache
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-macos
+          path: dist/
+      - run: cp dist/lines0.dylib npm/sqlite-lines-darwin-x64/lib
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-macos-wheels
+          path: dist/
+      - run: brew install python
+      - run: /usr/local/opt/python@3/libexec/bin/pip install --find-links dist/ sqlite_lines
+      - run: make test-loadable python=/usr/local/opt/python@3/libexec/bin/python
+      - run: make test-python python=/usr/local/opt/python@3/libexec/bin/python
+      # for test-npm
+      - uses: actions/setup-node@v3
+        with:
+          cache: "npm"
+          cache-dependency-path: npm/sqlite-lines/package.json
+      - run: npm install
+        working-directory: npm/sqlite-lines
+      - run: make test-npm
+      # for test-deno
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.30
+      - name: Cache Deno dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ runner.os }}-${{ hashFiles('deno/deno.lock') }}
+      - run: make test-deno
         env:
-          ENV: CI
-        run: |
-          mkdir -p dist/
-          make -j 4 dist/package.zip
-          make test
-  build-linux:
-    name: Build for Linux
-    runs-on: ubuntu-latest
+          DENO_SQLITE_LINES_PATH: ${{ github.workspace }}/dist/lines0.dylib
+  build-windows-extension:
+    name: Building windows extension
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build
-        env:
-          ENV: CI
-        run: |
-          mkdir -p dist/
-          make -j 4 dist/package.zip
-          make test
+      - run: make loadable
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-windows
+          path: dist/lines0.dll
+  build-windows-python:
+    runs-on: windows-latest
+    needs: [build-windows-extension]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-windows
+          path: dist/
+      - uses: actions/setup-python@v3
+      - run: pip install wheel
+      - run: make python
+      - run: make datasette
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-windows-wheels
+          path: dist/wheels/*.whl
+  test-windows:
+    runs-on: windows-2022
+    needs: [build-windows-extension, build-windows-python]
+    env:
+      DENO_DIR: deno_cache
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-windows
+          path: dist/
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-windows
+          path: npm/sqlite-lines-windows-x64/lib
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-windows-wheels
+          path: dist/
+      - run: pip install --find-links dist/ sqlite_lines
+      - run: make test-loadable
