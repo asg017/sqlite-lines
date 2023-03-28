@@ -9,10 +9,6 @@ const compiled_extensions = [
     path: "sqlite-lines-linux_x86/lines0.so",
     name: "deno-linux-x86_64.lines0.so",
   },
-  {
-    path: "sqlite-lines-windows/lines0.dll",
-    name: "deno-windows-x86_64.lines0.dll",
-  },
 ];
 
 module.exports = async ({ github, context }) => {

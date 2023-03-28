@@ -19,11 +19,6 @@ const extension = {
       os: "darwin",
       cpu: "x86_64",
     },
-    {
-      path: "sqlite-lines-windows/lines0.dll",
-      os: "windows",
-      cpu: "x86_64",
-    },
   ],
 };
 

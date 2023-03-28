@@ -63,44 +63,9 @@ jobs:
         with:
           name: sqlite-lines-macos-wheels
           path: dist/wheels/*.whl
-
-  build-windows-extension:
-    name: Building windows extension
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - run: make loadable
-      - uses: actions/upload-artifact@v3
-        with:
-          name: sqlite-lines-windows
-          path: dist/lines0.dll
-  build-windows-python:
-    runs-on: windows-latest
-    needs: [build-windows-extension]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download workflow artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: sqlite-lines-windows
-          path: dist/
-      - uses: actions/setup-python@v3
-      - run: pip install wheel
-      - run: make python
-      - run: make datasette
-      - uses: actions/upload-artifact@v3
-        with:
-          name: sqlite-lines-windows-wheels
-          path: dist/wheels/*.whl
   upload-extensions:
     name: Upload release assets
-    needs:
-      [
-        build-macos-extension,
-        build-linux_x86-extension,
-        build-windows-extension,
-      ]
+    needs: [build-macos-extension, build-linux_x86-extension]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -117,12 +82,7 @@ jobs:
             await script({github, context})
   upload-deno:
     name: Upload Deno release assets
-    needs:
-      [
-        build-macos-extension,
-        build-linux_x86-extension,
-        build-windows-extension,
-      ]
+    needs: [build-macos-extension, build-linux_x86-extension]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -137,12 +97,7 @@ jobs:
             const script = require('.github/workflows/upload-deno-assets.js')
             await script({github, context})
   upload-npm:
-    needs:
-      [
-        build-macos-extension,
-        build-linux_x86-extension,
-        build-windows-extension,
-      ]
+    needs: [build-macos-extension, build-linux_x86-extension]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -151,7 +106,6 @@ jobs:
       - run: |
           cp sqlite-lines-linux_x86/lines0.so npm/sqlite-lines-linux-x64/lib/lines0.so
           cp sqlite-lines-macos/lines0.dylib npm/sqlite-lines-darwin-x64/lib/lines0.dylib
-          cp sqlite-lines-windows/lines0.dll npm/sqlite-lines-windows-x64/lib/lines0.dll
       - name: Install node
         uses: actions/setup-node@v3
         with:
@@ -167,24 +121,15 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Publish NPM sqlite-lines-windows-x64
-        working-directory: npm/sqlite-lines-windows-x64
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish NPM sqlite-lines
         working-directory: npm/sqlite-lines
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   upload_pypi:
-    needs: [build-linux_x86-python, build-macos-python, build-windows-python]
+    needs: [build-linux_x86-python, build-macos-python]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: sqlite-lines-windows-wheels
-          path: dist
       - uses: actions/download-artifact@v3
         with:
           name: sqlite-lines-linux_x86-wheels
