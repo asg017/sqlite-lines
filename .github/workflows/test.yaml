@@ -138,3 +138,13 @@ jobs:
       - run: make test-deno
         env:
           DENO_SQLITE_LINES_PATH: ${{ github.workspace }}/dist/lines0.dylib
+  build-macos-aarch64-extension:
+    name: Building MacOS aarch64 extension
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - run: make loadable
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-macos-aarch64
+          path: dist/lines0.dylib
