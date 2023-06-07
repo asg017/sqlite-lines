@@ -126,7 +126,35 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-  upload_pypi:
+  upload-gem:
+    needs: [build-macos-extension, build-linux_x86-extension]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+      - run: |
+          rm bindings/ruby/lib/*.{dylib,so,dll} || true
+          cp sqlite-lines-macos/*.dylib bindings/ruby/lib
+          gem -C bindings/ruby build -o x86_64-darwin.gem sqlite_vss.gemspec
+        env:
+          PLATFORM: x86_64-darwin
+      - run: |
+          rm bindings/ruby/lib/*.{dylib,so,dll} || true
+          cp sqlite-lines-linux_x86/*.so bindings/ruby/lib
+          gem -C bindings/ruby build -o x86_64-linux.gem sqlite_vss.gemspec
+        env:
+          PLATFORM: x86_64-linux
+      - run: |
+          gem push bindings/ruby/x86_64-linux.gem
+          gem push bindings/ruby/x86_64-darwin.gem
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
+  upload-pypi:
     needs: [build-linux_x86-python, build-macos-python]
     runs-on: ubuntu-latest
     steps:

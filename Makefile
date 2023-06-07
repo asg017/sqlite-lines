@@ -79,7 +79,7 @@ $(TARGET_LOADABLE): $(prefix) sqlite-lines.c
 	$(DEFINE_SQLITE_LINES) \
 	sqlite-lines.c -o $@
 
-$(TARGET_CLI): $(prefix) cli.c sqlite-lines.c $(TARGET_SQLITE3_EXTRA_C) sqlite/shell.c 
+$(TARGET_CLI): $(prefix) cli.c sqlite-lines.c $(TARGET_SQLITE3_EXTRA_C) sqlite/shell.c
 	gcc -O3 \
 	 $(DEFINE_SQLITE_LINES) \
 	-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=1 \
@@ -117,7 +117,7 @@ python-versions: python/version.py.tmpl
 
 	VERSION=$(VERSION) envsubst < python/version.py.tmpl > python/datasette_sqlite_lines/datasette_sqlite_lines/version.py
 	echo "✅ generated python/datasette_sqlite_lines/datasette_sqlite_lines/version.py"
-	
+
 datasette: $(TARGET_WHEELS) $(shell find python/datasette_sqlite_lines -type f -name '*.py')
 	rm $(TARGET_WHEELS)/datasette* || true
 	pip3 wheel python/datasette_sqlite_lines/ --no-deps -w $(TARGET_WHEELS)
@@ -128,11 +128,18 @@ npm: VERSION npm/platform-package.README.md.tmpl npm/platform-package.package.js
 deno: VERSION deno/deno.json.tmpl
 	scripts/deno_generate_package.sh
 
+bindings/ruby/lib/version.rb: bindings/ruby/lib/version.rb.tmpl VERSION
+	VERSION=$(VERSION) envsubst < $< > $@
+
+ruby: bindings/ruby/lib/version.rb
+
 version:
 	make python
 	make python-versions
 	make npm
 	make deno
+	make ruby
+
 test_files/big.txt:
 	seq 1 1000000 > $@
 
@@ -141,7 +148,7 @@ test_files/big-line-line.txt:
 
 test_files: test_files/big.txt test_files/big-line-line.txt
 
-test: 
+test:
 	make test-loadable
 	make test-python
 	make test-npm
@@ -187,7 +194,7 @@ test-sqlite3-watch: $(TARAGET_SQLITE3)
 	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py --clear -- make test-sqlite3
 
 .PHONY: all clean format version \
-	python python-versions datasette npm deno version \
+	python python-versions datasette npm deno ruby version \
 	test test-watch test-loadable-watch test-cli-watch test-sqlite3-watch \
 	test-format test-loadable test-cli test-sqlite3 test-sqljs test-python \
 	test_files \
