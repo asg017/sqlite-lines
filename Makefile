@@ -193,7 +193,10 @@ test-cli-watch: $(TARGET_CLI) tests/test-cli.py
 test-sqlite3-watch: $(TARAGET_SQLITE3)
 	watchexec -w $(TARAGET_SQLITE3) -w tests/test-sqlite3.py --clear -- make test-sqlite3
 
-.PHONY: all clean format version \
+publish-release:
+	./scripts/publish_release.sh
+
+.PHONY: all clean format version publish-release \
 	python python-versions datasette npm deno ruby version \
 	test test-watch test-loadable-watch test-cli-watch test-sqlite3-watch \
 	test-format test-loadable test-cli test-sqlite3 test-sqljs test-python \
