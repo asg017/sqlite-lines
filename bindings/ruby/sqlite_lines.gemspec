@@ -4,14 +4,14 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "sqlite-vss"
-  spec.version       = SqliteVss::VERSION
+  spec.name          = "sqlite-lines"
+  spec.version       = SqliteLines::VERSION
   spec.authors       = ["Alex Garcia"]
   spec.email         = ["alexsebastian.garcia@gmail.com"]
 
   spec.summary       = "a"
   spec.description   = "b"
-  spec.homepage      = "https://github.com/asg017/sqlite-vss"
+  spec.homepage      = "https://github.com/asg017/sqlite-lines"
   spec.license       = "MIT"
 
   # The --platform flag would work in most cases, but on a GH action
