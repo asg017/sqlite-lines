@@ -66,6 +66,21 @@ See [`docs.md`](./docs.md) for a full API Reference and detailed documentation.
 
 ## Installing
 
+| Language       | Install                                                    |                                                                                                                                                                                           |
+| -------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python         | `pip install sqlite-lines`                                   | [![PyPI](https://img.shields.io/pypi/v/sqlite-lines.svg?color=blue&logo=python&logoColor=white)](https://pypi.org/project/sqlite-lines/)                                                      |
+| Datasette      | `datasette install datasette-sqlite-lines`                   | [![Datasette](https://img.shields.io/pypi/v/datasette-sqlite-lines.svg?color=B6B6D9&label=Datasette+plugin&logoColor=white&logo=python)](https://datasette.io/plugins/datasette-sqlite-lines) |
+| Node.js        | `npm install sqlite-lines`                                   | [![npm](https://img.shields.io/npm/v/sqlite-lines.svg?color=green&logo=nodedotjs&logoColor=white)](https://www.npmjs.com/package/sqlite-lines)                                                |
+| Deno           | [`deno.land/x/sqlite_lines`](https://deno.land/x/sqlite_lines) | [![deno.land/x release](https://img.shields.io/github/v/release/asg017/sqlite-lines?color=fef8d2&include_prereleases&label=deno.land%2Fx&logo=deno)](https://deno.land/x/sqlite_lines)        |
+| Ruby           | `gem install sqlite-lines`                                   | ![Gem](https://img.shields.io/gem/v/sqlite-lines?color=red&logo=rubygems&logoColor=white)                                                                                                   |
+| Github Release |                                                            | ![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/asg017/sqlite-lines?color=lightgrey&include_prereleases&label=Github+release&logo=github)                     |
+
+<!--
+| Elixir         | [`hex.pm/packages/sqlite_lines`](https://hex.pm/packages/sqlite_lines) | [![Hex.pm](https://img.shields.io/hexpm/v/sqlite_lines?color=purple&logo=elixir)](https://hex.pm/packages/sqlite_lines)                                                                       |
+| Go             | `go get -u github.com/asg017/sqlite-lines/bindings/go`               | [![Go Reference](https://pkg.go.dev/badge/github.com/asg017/sqlite-lines/bindings/go.svg)](https://pkg.go.dev/github.com/asg017/sqlite-lines/bindings/go)                                     |
+| Rust           | `cargo add sqlite-lines`                                             | [![Crates.io](https://img.shields.io/crates/v/sqlite-lines?logo=rust)](https://crates.io/crates/sqlite-lines)                                                                                 |
+-->
+
 The [Releases page](https://github.com/asg017/sqlite-lines/releases) contains pre-built binaries for Linux amd64 and MacOS (amd64, no arm).
 
 ### As a loadable extension
