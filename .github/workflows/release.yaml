@@ -71,15 +71,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Download workflow artifacts
-        uses: actions/download-artifact@v2
-      - run: npm install tar-fs
-      - uses: actions/github-script@v6
+      - uses: actions/download-artifact@v2
+      - uses: asg017/upload-spm@main
+        id: upload-spm
         with:
+          name: sqlite-lines
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const script = require('.github/workflows/upload.js')
-            await script({github, context})
+          platforms: |
+            linux-x86_64:     sqlite-lines-linux_x86
+            macos-x86_64:     sqlite-lines-macos
   upload-deno:
     name: Upload Deno release assets
     needs: [build-macos-extension, build-linux_x86-extension]
