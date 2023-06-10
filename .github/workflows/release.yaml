@@ -78,8 +78,8 @@ jobs:
           name: sqlite-lines
           github-token: ${{ secrets.GITHUB_TOKEN }}
           platforms: |
-            linux-x86_64:     sqlite-lines-linux_x86
-            macos-x86_64:     sqlite-lines-macos
+            linux-x86_64:     sqlite-lines-linux_x86/*
+            macos-x86_64:     sqlite-lines-macos/*
   upload-deno:
     name: Upload Deno release assets
     needs: [build-macos-extension, build-linux_x86-extension]
