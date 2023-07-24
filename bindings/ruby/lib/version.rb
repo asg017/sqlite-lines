@@ -1,4 +1,4 @@
 # automatically generated, do not edit by hand.
 module SqliteLines
-  VERSION = "0.2.0-alpha.6"
+  VERSION = "0.2.0"
 end
