@@ -63,6 +63,17 @@ jobs:
         with:
           name: sqlite-lines-macos-wheels
           path: dist/wheels/*.whl
+  build-datasette-sqlite-utils:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+      - run: pip install wheel build
+      - run: make datasette sqlite-utils
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-datasette-sqlite-utils-wheels
+          path: dist/wheels/*.whl
   upload-extensions:
     name: Upload release assets
     needs: [build-macos-extension, build-linux_x86-extension]
@@ -155,7 +166,8 @@ jobs:
         env:
           GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
   upload-pypi:
-    needs: [build-linux_x86-python, build-macos-python]
+    needs:
+      [build-linux_x86-python, build-macos-python, build-datasette-sqlite-utils]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
@@ -165,6 +177,10 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: sqlite-lines-macos-wheels
+          path: dist
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-datasette-sqlite-utils-wheels
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:

@@ -1,0 +1,21 @@
+[project]
+name = "sqlite-utils-sqlite-lines"
+version = "0.2.0-alpha.5"
+description = "TODO"
+readme = "README.md"
+authors = [{name = "Alex Garcia"}]
+license = {text = "Apache-2.0"}
+classifiers = []
+
+dependencies = [
+    "sqlite-utils",
+    "sqlite-lines"
+]
+
+[project.urls]
+Homepage = "https://github.com/asg017/sqlite-lines"
+Changelog = "https://github.com/asg017/sqlite-lines/releases"
+Issues = "https://github.com/asg017/sqlite-lines/issues"
+
+[project.entry-points.sqlite_utils]
+sqlite_lines = "sqlite_utils_sqlite_lines"
