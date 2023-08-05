@@ -34,5 +34,5 @@ envsubst < npm/$PACKAGE_NAME_BASE/package.json.tmpl > npm/$PACKAGE_NAME_BASE/pac
 echo "✅ generated npm/$PACKAGE_NAME_BASE"
 
 generate darwin x64  
+generate darwin arm64
 generate linux x64 
-generate windows x64 

@@ -75,7 +75,7 @@ $(TARGET_PACKAGE): $(prefix) $(TARGET_LOADABLE) $(TARGET_OBJ) sqlite-lines.h sql
 
 $(TARGET_LOADABLE): $(prefix) sqlite-lines.c
 	gcc -Isqlite \
-	$(LOADABLE_CFLAGS) \
+	$(LOADABLE_CFLAGS) $(CFLAGS) \
 	$(DEFINE_SQLITE_LINES) \
 	sqlite-lines.c -o $@
 

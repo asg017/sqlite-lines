@@ -63,6 +63,33 @@ jobs:
         with:
           name: sqlite-lines-macos-wheels
           path: dist/wheels/*.whl
+  build-macos-aarch64-extension:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: make loadable CFLAGS="-target arm64-apple-macos11"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-macos-aarch64
+          path: dist/lines0.dylib
+  build-macos-aarch64-python:
+    runs-on: macos-latest
+    needs: [build-macos-aarch64-extension]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-macos-aarch64
+          path: dist/
+      - uses: actions/setup-python@v3
+      - run: pip install wheel
+      - run: make python IS_MACOS_ARM=1
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sqlite-lines-macos-aarch64-wheels
+          path: dist/wheels/*.whl
   build-datasette-sqlite-utils:
     runs-on: ubuntu-20.04
     steps:
@@ -76,7 +103,12 @@ jobs:
           path: dist/wheels/*.whl
   upload-extensions:
     name: Upload release assets
-    needs: [build-macos-extension, build-linux_x86-extension]
+    needs:
+      [
+        build-macos-extension,
+        build-macos-aarch64-extension,
+        build-linux_x86-extension,
+      ]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -91,9 +123,15 @@ jobs:
           platforms: |
             linux-x86_64:     sqlite-lines-linux_x86/*
             macos-x86_64:     sqlite-lines-macos/*
+            macos-aarch64:     sqlite-lines-macos-aarch64/*
   upload-deno:
     name: Upload Deno release assets
-    needs: [build-macos-extension, build-linux_x86-extension]
+    needs:
+      [
+        build-macos-extension,
+        build-macos-aarch64-extension,
+        build-linux_x86-extension,
+      ]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -108,7 +146,12 @@ jobs:
             const script = require('.github/workflows/upload-deno-assets.js')
             await script({github, context})
   upload-npm:
-    needs: [build-macos-extension, build-linux_x86-extension]
+    needs:
+      [
+        build-macos-extension,
+        build-macos-aarch64-extension,
+        build-linux_x86-extension,
+      ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -117,6 +160,7 @@ jobs:
       - run: |
           cp sqlite-lines-linux_x86/lines0.so npm/sqlite-lines-linux-x64/lib/lines0.so
           cp sqlite-lines-macos/lines0.dylib npm/sqlite-lines-darwin-x64/lib/lines0.dylib
+          cp sqlite-lines-macos-aarch64/lines0.dylib npm/sqlite-lines-darwin-arm64/lib/lines0.dylib
       - name: Install node
         uses: actions/setup-node@v3
         with:
@@ -132,13 +176,23 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish NPM sqlite-lines-darwin-arm64
+        working-directory: npm/sqlite-lines-darwin-arm64
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish NPM sqlite-lines
         working-directory: npm/sqlite-lines
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   upload-gem:
-    needs: [build-macos-extension, build-linux_x86-extension]
+    needs:
+      [
+        build-macos-extension,
+        build-macos-aarch64-extension,
+        build-linux_x86-extension,
+      ]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -156,6 +210,12 @@ jobs:
           PLATFORM: x86_64-darwin
       - run: |
           rm bindings/ruby/lib/*.{dylib,so,dll} || true
+          cp sqlite-lines-macos-aarch64/*.dylib bindings/ruby/lib
+          gem -C bindings/ruby build -o arm64-darwin.gem sqlite_lines.gemspec
+        env:
+          PLATFORM: arm64-darwin
+      - run: |
+          rm bindings/ruby/lib/*.{dylib,so,dll} || true
           cp sqlite-lines-linux_x86/*.so bindings/ruby/lib
           gem -C bindings/ruby build -o x86_64-linux.gem sqlite_lines.gemspec
         env:
@@ -163,11 +223,17 @@ jobs:
       - run: |
           gem push bindings/ruby/x86_64-linux.gem
           gem push bindings/ruby/x86_64-darwin.gem
+          gem push bindings/ruby/aarch64-darwin.gem
         env:
           GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
   upload-pypi:
     needs:
-      [build-linux_x86-python, build-macos-python, build-datasette-sqlite-utils]
+      [
+        build-linux_x86-python,
+        build-macos-python,
+        build-macos-aarch64-python,
+        build-datasette-sqlite-utils,
+      ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
@@ -177,6 +243,10 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: sqlite-lines-macos-wheels
+          path: dist
+      - uses: actions/download-artifact@v3
+        with:
+          name: sqlite-lines-macos-aarch64-wheels
           path: dist
       - uses: actions/download-artifact@v3
         with:
