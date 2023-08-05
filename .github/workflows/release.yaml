@@ -223,7 +223,7 @@ jobs:
       - run: |
           gem push bindings/ruby/x86_64-linux.gem
           gem push bindings/ruby/x86_64-darwin.gem
-          gem push bindings/ruby/aarch64-darwin.gem
+          gem push bindings/ruby/arm64-darwin.gem
         env:
           GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
   upload-pypi:
