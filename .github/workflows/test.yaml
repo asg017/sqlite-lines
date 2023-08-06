@@ -5,11 +5,11 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      - run: make loadable
+      - run: make loadable static
       - uses: actions/upload-artifact@v3
         with:
           name: sqlite-lines-linux_x86
-          path: dist/lines0.so
+          path: dist/*
   build-linux_x86-python:
     runs-on: ubuntu-20.04
     needs: [build-linux_x86-extension]
@@ -73,11 +73,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - run: make loadable
+      - run: make loadable static
       - uses: actions/upload-artifact@v3
         with:
           name: sqlite-lines-macos
-          path: dist/lines0.dylib
+          path: dist/*
   build-macos-python:
     runs-on: macos-latest
     needs: [build-macos-extension]
@@ -143,8 +143,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
-      - run: make loadable
+      - run: make loadable static CFLAGS="-target arm64-apple-macos11"
       - uses: actions/upload-artifact@v3
         with:
           name: sqlite-lines-macos-aarch64
-          path: dist/lines0.dylib
+          path: dist/*

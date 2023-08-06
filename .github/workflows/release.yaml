@@ -11,11 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: make loadable
+      - run: make loadable static
       - uses: actions/upload-artifact@v3
         with:
           name: sqlite-lines-linux_x86
-          path: dist/lines0.so
+          path: dist/*
   build-linux_x86-python:
     runs-on: ubuntu-20.04
     needs: [build-linux_x86-extension]
@@ -40,11 +40,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: make loadable
+      - run: make loadable static
       - uses: actions/upload-artifact@v3
         with:
           name: sqlite-lines-macos
-          path: dist/lines0.dylib
+          path: dist/*
   build-macos-python:
     runs-on: macos-latest
     needs: [build-macos-extension]
@@ -68,11 +68,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: make loadable CFLAGS="-target arm64-apple-macos11"
+      - run: make loadable static CFLAGS="-target arm64-apple-macos11"
       - uses: actions/upload-artifact@v3
         with:
           name: sqlite-lines-macos-aarch64
-          path: dist/lines0.dylib
+          path: dist/*
   build-macos-aarch64-python:
     runs-on: macos-latest
     needs: [build-macos-aarch64-extension]
@@ -112,6 +112,8 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    outputs:
+      checksums: ${{ steps.upload-spm.outputs.asset-checksums }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -132,6 +134,8 @@ jobs:
         build-macos-aarch64-extension,
         build-linux_x86-extension,
       ]
+    outputs:
+      deno-checksums: ${{ steps.deno-assets.outputs.result }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -145,6 +149,37 @@ jobs:
           script: |
             const script = require('.github/workflows/upload-deno-assets.js')
             await script({github, context})
+  upload-checksums:
+    needs: [upload-extensions, upload-deno]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      checksums: ${{ steps.upload-checksums.outputs.result }}
+    steps:
+      - id: upload-checksums
+        uses: actions/github-script@v6
+        env:
+          CHECKSUMS: "${{ needs.upload-extensions.outputs.checksums }}\n${{ needs.upload-deno.outputs.deno-checksums }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            const { owner, repo } = context.repo;
+            const release = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag: process.env.GITHUB_REF.replace("refs/tags/", ""),
+            });
+            const release_id = release.data.id;
+            github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id,
+              name: "checksums.txt",
+              data: process.env.CHECKSUMS,
+            });
+            return process.env.CHECKSUMS
   upload-npm:
     needs:
       [

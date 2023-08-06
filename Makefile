@@ -2,8 +2,6 @@ COMMIT=$(shell git rev-parse HEAD)
 VERSION=$(shell cat VERSION)
 DATE=$(shell date +'%FT%TZ%z')
 
-LOADABLE_CFLAGS=-fPIC -shared
-
 ifeq ($(shell uname -s),Darwin)
 CONFIG_DARWIN=y
 else
@@ -40,6 +38,8 @@ prefix=dist
 TARGET_OBJ=$(prefix)/lines.o
 TARGET_CLI=$(prefix)/sqlite-lines
 TARGET_LOADABLE=$(prefix)/lines0.$(LOADABLE_EXTENSION)
+TARGET_STATIC=$(prefix)/libsqlite_lines0.a
+TARGET_H=$(prefix)/sqlite-lines.h
 TARGET_WHEELS=$(prefix)/wheels
 TARGET_SQLITE3_EXTRA_C=$(prefix)/sqlite3-extra.c
 TARGET_SQLITE3=$(prefix)/sqlite3
@@ -66,6 +66,7 @@ format: $(FORMAT_FILES)
 	clang-format -i $(FORMAT_FILES)
 
 loadable: $(TARGET_LOADABLE)
+static: $(TARGET_STATIC) $(TARGET_H)
 cli: $(TARGET_CLI)
 sqlite3: $(TARGET_SQLITE3)
 sqljs: $(TARGET_SQLJS)
@@ -75,9 +76,19 @@ $(TARGET_PACKAGE): $(prefix) $(TARGET_LOADABLE) $(TARGET_OBJ) sqlite-lines.h sql
 
 $(TARGET_LOADABLE): $(prefix) sqlite-lines.c
 	gcc -Isqlite \
-	$(LOADABLE_CFLAGS) $(CFLAGS) \
+	-fPIC -shared $(CFLAGS) \
 	$(DEFINE_SQLITE_LINES) \
 	sqlite-lines.c -o $@
+
+$(TARGET_STATIC): $(prefix) sqlite-lines.c
+	gcc -Isqlite \
+	-DSQLITE_CORE -c $(CFLAGS) \
+	$(DEFINE_SQLITE_LINES) \
+	sqlite-lines.c -o $(prefix)/lines.o
+	ar rcs $@ $(prefix)/lines.o
+
+$(TARGET_H): sqlite-lines.h
+	cp $< $@
 
 $(TARGET_CLI): $(prefix) cli.c sqlite-lines.c $(TARGET_SQLITE3_EXTRA_C) sqlite/shell.c
 	gcc -O3 \
