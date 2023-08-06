@@ -1,6 +1,6 @@
 {
   "name": "sqlite-lines",
-  "version": "0.2.1",
+  "version": "0.2.2-alpha.1",
   "github": "https://github.com/asg017/sqlite-lines",
   "tasks": {
     "test": "deno test --unstable -A test.ts"
