@@ -12,13 +12,13 @@ try {
     path = await download({
       url: {
         darwin: {
-          x86_64: `${BASE}/deno-darwin-x86_64.lines0.dylib`,
+          x86_64: `${BASE}/sqlite-lines-${meta.version}-deno-darwin-x86_64.lines0.dylib`,
         },
         windows: {
-          x86_64: `${BASE}/deno-windows-x86_64.lines0.dll`,
+          x86_64: `${BASE}/sqlite-lines-${meta.version}-deno-windows-x86_64.lines0.dll`,
         },
         linux: {
-          x86_64: `${BASE}/deno-linux-x86_64.lines0.so`,
+          x86_64: `${BASE}/sqlite-lines-${meta.version}-deno-linux-x86_64.lines0.so`,
         },
       },
       suffixes: {
