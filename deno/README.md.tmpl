@@ -13,15 +13,14 @@ import * as sqlite_lines from "https://deno.land/x/sqlite_lines@v${VERSION}/mod.
 
 const db = new Database(":memory:");
 
-  db.enableLoadExtension = true;
-  db.loadExtension(sqlite_lines.getLoadablePath());
+db.enableLoadExtension = true;
+sqlite_lines.load(db);
 
-  const [version] = db
-    .prepare("select lines_version()")
-    .value<[string]>()!;
+const [version] = db
+  .prepare("select lines_version()")
+  .value<[string]>()!;
 
-  console.log(version);
-
+console.log(version);
 ```
 
 Like `x/sqlite3`, `x/sqlite_lines` requires network and filesystem permissions to download and cache the pre-compiled SQLite extension for your machine. Though `x/sqlite3` already requires `--allow-ffi` and `--unstable`, so you might as well use `--allow-all`/`-A`.

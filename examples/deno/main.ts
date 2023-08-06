@@ -7,7 +7,7 @@ console.log(`sqlite_lines_meta version:`, sqlite_lines_meta.version);
 const db = new Database(":memory:");
 
 db.enableLoadExtension = true;
-db.loadExtension(sqlite_lines.getLoadablePath());
+sqlite_lines.load(db);
 
 const [version] = db.prepare("select lines_version()").value<[string]>()!;
 
