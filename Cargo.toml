@@ -1,0 +1,12 @@
+[package]
+name = "sqlite-lines"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sqlite-loadable = "0.0.6-alpha.6"
+sqlite-reader = { git = "https://github.com/asg017/sqlite-reader.git" }
+
+[lib]
+crate-type=["cdylib", "staticlib", "lib"]
+name = "lines0"
